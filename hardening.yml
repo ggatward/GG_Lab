@@ -1,0 +1,39 @@
+---
+- name: System Hardening
+  remote_user: svc-ansible
+  become: true
+  # hosts: "{{ hostlist }},!docker,!containers,!raspberry,!ovirt"
+  hosts: all
+
+  tasks:
+  - block:
+    - name: Apply CIS hardening for EL8
+      import_role:
+        name: Ansible-RHEL8-CIS-Benchmarks
+      tags:
+      - hardening
+      - cis
+      when: ansible_distribution_major_version == '8'
+
+    - name: Apply CIS hardening for EL7
+      import_role:
+        name: Ansible-RHEL7-CIS-Benchmarks
+      tags:
+      - hardening
+      - cis
+      when: ansible_distribution_major_version == '7'
+    when: ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS'
+
+
+- name: Extra System Hardening
+  remote_user: svc-ansible
+  become: true
+  # hosts: "{{ hostlist }},!docker,!containers"
+  hosts: all
+  tasks:
+  - name: Apply additional hardening
+    import_role:
+      name: ansible-role-extra-hardening
+    tags:
+    - hardening
+    - extra_hardening

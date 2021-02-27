@@ -1,0 +1,106 @@
+---
+- name: Generic Infrastructure
+  remote_user: svc-ansible
+  become: true
+  # hosts: "{{ hostlist }},!docker,!containers"
+  hosts: all
+  tasks:
+  - name: Update apt cache
+    tags:
+    - generic
+    become: true
+    when: ansible_pkg_mgr  == 'apt'
+    apt:
+      update_cache: true
+      cache_valid_time: 3600
+
+  - name: Generic configurations
+    tags:
+    - generic
+    import_role:
+      name: ansible-generic-os
+
+  - name: Install platform tools
+    tags:
+    - generic
+    - platform_tools
+    import_role:
+      name: ansible-role-hw_vm_tools
+
+  # - name: Install CA certificates
+  #   import_role:
+  #     name: ansible-role-cacerts
+  #   tags:
+  #   - generic
+  #   - certs
+
+####################################################################
+
+- name: Authentication
+  remote_user: svc-ansible
+  become: true
+  # hosts: "{{ hostlist }},!docker,!containers"
+  hosts: all
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Configure IPA client
+    tags:
+    - generic
+    - ipa
+    - auth
+    import_role:
+      # name: ansible-role-ipaclient
+      name: ansible-ipaclient
+    vars:
+      ipaclient_servers:
+      - ipa01.ipa.home.gatwards.org
+      - ipa02.ipa.home.gatwards.org
+      ipaclient_domain: ipa.home.gatwards.org
+      ipaclient_enroll_user: svc-ipajoin
+      ipaclient_enroll_pass: "{{ vault_idm_admin_pass }}"
+      ipaclient_sssd_shortnames: true
+      ipaclient_krb5_dns_lookup_realm: 'true'
+      ipaclient_krb5_dns_lookup_kdc: 'true'
+      ipaclient_krb5_dns_canonicalize_hostname: 'true'
+      ipaclient_krb5_extra_domains:
+      - core.home.gatwards.org
+      - .core.home.gatwards.org
+      - lab.home.gatwards.org
+      - .lab.home.gatwards.org
+
+  - name: Add NFS domain to idmap.conf
+    tags:
+    - generic
+    - ipa
+    - auth
+    lineinfile:
+      path: /etc/idmapd.conf
+      regexp: '^#?\s?Domain.*=.*'
+      line: "Domain = home.gatwards.org"
+      backrefs: true
+      state: present
+
+# ####################################################################
+
+- name: Monitoring
+  remote_user: svc-ansible
+  # hosts: "{{ hostlist }},!docker,!containers"
+  hosts: all
+  become: true
+  tasks:
+  - import_role:
+      name: ansible-node-exporter
+    tags:
+    - monitoring
+    - node_exporter
+
+  - name: Open Prometheus node_exporter firewall port
+    tags:
+    - monitoring
+    - node_exporter
+    firewalld:
+      port: '9100/tcp'
+      immediate: yes
+      permanent: yes
+      state: enabled
