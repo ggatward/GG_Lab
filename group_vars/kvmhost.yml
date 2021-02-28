@@ -7,7 +7,8 @@ ipaclient_ssl_create_certs: true
 
 kvm_users:
 - geoff
-kvm_imgvol: /dev/mapper/vg_images-lv_images
+kvm_imgvol: /dev/sdb
+kvm_trunk_iface: enp4s0
 kvm_vlans: ['3','4']
 kvm_virtual_networks:
 - name: Lab_VLAN3
@@ -20,3 +21,32 @@ kvm_virtual_networks:
   bridge_name: vmbr4
   autostart: true
   state: active
+
+kvm_config_storage_pools: true
+kvm_storage_pools:
+- name: ISO
+  path: /data
+  autostart: true
+  state: active
+
+kvm_manage_vms: true
+kvm_vms:
+- name: ovirt-engine
+  autostart: true
+  # Define boot devices in order of preference
+  boot_devices:
+  - network
+  - hd
+  graphics: true
+  # Define disks in MB
+  disks:
+  - disk_driver: scsi
+    name: ovirt-engine.1
+    size: 81920
+  memory: 12288
+  network_interfaces:
+  - source: Lab_VLAN4
+    network_driver: virtio
+    type: network
+  state: running
+  vcpu: 4

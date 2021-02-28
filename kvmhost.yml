@@ -1,9 +1,8 @@
 ---
-- name: KVM Host
+- name: Setup KVM Host
   remote_user: svc-ansible
   become: true
   hosts: kvmhost
-
   tasks:
   - name: Create KVM image partition
     parted:
@@ -41,13 +40,19 @@
     with_items: "{{ kvm_vlans }}"
 
   - name: Create VLAN interfaces and add to bridge
-    command: nmcli con add type vlan con-name vlan{{ item }} ifname enp1s0.{{ item }} dev enp1s0 id {{ item }} master vmbr{{ item }} slave-type bridge
+    command: nmcli con add type vlan con-name vlan{{ item }} ifname {{ kvm_trunk_iface }}.{{ item }} dev {{ kvm_trunk_iface }} id {{ item }} master vmbr{{ item }} slave-type bridge
     when: '"vlan{{ item }}" not in interfaces.stdout'
     with_items: "{{ kvm_vlans }}"
 
+
+- name: Configure KVM
+  remote_user: svc-ansible
+  become: true
+  hosts: kvmhost
+  tasks:
   - name: Install prereq packages
     yum:
-      name: python-lxml
+      name: python3-lxml
       state: present
 
   - name: Configure KVM
@@ -59,6 +64,16 @@
       kvm_config: true
       kvm_config_users: true
       kvm_config_virtual_networks: true
+      kvm_redhat_packages:
+      - libvirt-client
+      - python3-libvirt
+      - libvirt
+      - qemu-img
+      - qemu-kvm
+      - virt-install
+      - virt-manager
+      - virt-viewer
+      - xauth
 
   - name: Allow SSH X11 Forwarding for virt-manager display
     lineinfile:
