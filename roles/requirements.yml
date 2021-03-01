@@ -16,6 +16,9 @@ roles:
 - src: https://github.com/ggatward/ansible-ipaclient.git
   scm: git
 
+- src: https://github.com/ggatward/ansible-role-cacerts.git
+  scm: git
+
 - src: https://github.com/adfinis-sygroup/ansible-role-hw_vm_tools.git
   scm: git
 
@@ -29,6 +32,12 @@ roles:
   scm: git
 
 - src: https://github.com/mrlesmithjr/ansible-kvm
+  scm: git
+
+- src: https://github.com/ggatward/ansible-role-ovirt-ldap.git
+  scm: git
+
+- src: https://github.com/ggatward/ansible-role-ovirt-ssl.git
   scm: git
 
 # - src: git@github.com:ggatward/ansible-role-workstation.git

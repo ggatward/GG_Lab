@@ -1,63 +1,149 @@
 ---
-- name: oVirt Host
+- name: Prepare oVirt Engine
   remote_user: svc-ansible
   become: true
-  hosts: ovirt
-
+  hosts: ovirt_engine
   tasks:
-  - name: Check correct OS version
-    assert:
-      that:
-      - ("{{ ansible_distribution }} == RedHat") or ("{{ ansible_distribution }} == CentOS")
-      - "{{ ansible_distribution_major_version }} == 7"
-      fail_msg: "Incompatible OS version detected"
-
-  - name: Install oVirt repos
+  - name: Configure oVirt repos
+    tags:
+    - ovirt
+    - ovirt_engine
     yum:
-      name: https://resources.ovirt.org/pub/yum-repo/ovirt-release43.rpm
+      name: https://resources.ovirt.org/pub/yum-repo/ovirt-release44.rpm
+      state: present
+      disable_gpg_check: true
+
+  # DNF module doesn't seem to fully work with modules yet
+  - name: Enable prerequisite DNF modules
+    tags:
+    - ovirt
+    - ovirt_engine
+    command: "dnf module -y enable {{ item }}"
+    loop:
+    - 'javapackages-tools'
+    - 'pki-deps'
+    - 'postgresql:12'
+    changed_when: false
+    args:
+      warn: false
+
+  - name: Install engine packages
+    tags:
+    - ovirt
+    - ovirt_engine
+    dnf:
+      name: ovirt-engine
       state: present
 
-  - name: Install oVirt cockpit dashboard
-    yum:
-      name: cockpit-ovirt-dashboard
-      state: present
 
-  - name: Enable cockpit firewall ports
-    firewalld:
-      service: cockpit
-      immediate: yes
-      permanent: yes
-      state: enabled
-
-  - name: Enable cockpit
-    systemd:
-      name: cockpit.socket
-      state: started
-
-  # Now we need to bootstrap oVirt via cockpit http  :-(
-  - name: Notify user
-    debug:
-      msg: "Please login to cockpit at https://{{ ansible_fqdn }}:9090 to complete the oVirt installation"
-
-
-# yum install ovirt-hosted-engine-setup
-
-# hosted-engine --deploy
+- name: Install oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  collections:
+  - ovirt.ovirt
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Install oVirt Engine
+    import_role:
+      name: ovirt.engine_setup
+    vars:
+      ovirt_engine_setup_version: "4.4"
+      ovirt_engine_setup_organization: "GatwardIT"
+      ovirt_engine_setup_fqdn: "{{ ansible_fqdn }}"
+      ovirt_engine_setup_firewall_manager: firewalld
+      ovirt_engine_setup_admin_password: "{{ vault_ovirt_admin_pass }}"
+      ovirt_engine_grafana_enable: false
 
 
-###############################################################################
-# Add prometheus exporter
-# - name: oVirt VDSM Prometheus exporter
+
+# - name: Configure oVirt Engine
+#   remote_user: svc-ansible
+#   become: true
+#   hosts: ovirt_engine
+#   vars_files:
+#   - vault.yml
+#   tasks:
+#   - name: set up TLS for engine services
+#     tags:
+#     - ovirt
+#     - ovirt_engine
+#     - ovirt_ssl
+#     import_role:
+#       name: ansible-role-ovirt-ssl
+#     vars:
+#       httpd_key_file: /etc/pki/tls/private/{{ ansible_fqdn }}.key
+#       httpd_cert_file: /etc/pki/tls/certs/{{ ansible_fqdn }}.pem
+#       httpd_ca_cert: "{{ lookup('file', '/etc/ipa/ca.crt') }}"
+
+#   - name: set up LDAP auth
+#     tags:
+#     - ovirt
+#     - ovirt_engine
+#     - ovirt_ldap
+#     import_role:
+#       name: ansible-role-ovirt-ldap
+#     vars:
+#       ovirt_engine_ldap_setup:
+#         aaaProfileName: gatwards.org
+#         profile: ipa
+#         useDNS: True
+#         serverset: round-robin
+#         protocol: starttls
+#         hosts: ipa1.ipa.home.gatwards.org ipa2.ipa.home.gatwards.org
+#         user: uid=svc-ovirt,cn=users,cn=accounts,dc=ipa,dc=home,dc=gatwards,dc=org
+#         baseDN: dc=ipa,dc=home,dc=gatwards,dc=org
+#         password: "{{ vault_ovirt_ldap_password }}"
+#         toolEnable: False
+#         configOverwrite: True
+#         useVmSso: False
+#         cacert_method: insecure
+#         autoAcceptDefault: True
+
+
+
+# - name: oVirt Host
 #   remote_user: svc-ansible
 #   become: true
 #   hosts: ovirt
 
 #   tasks:
-#   - import_role:
-#       name: ansible-vdsm-prometheus
-#     tags:
-#     - monitoring
-#     vars:
-#       vdsm_prom_ca: /etc/ipa/ca.crt
-#       vdsm_prom_cert: /etc/pki/tls/certs/{{ ansible_fqdn }}.pem
-#       vdsm_prom_key: /etc/pki/tls/private/{{ ansible_fqdn }}.key
+#   - name: Check correct OS version
+#     assert:
+#       that:
+#       - ("{{ ansible_distribution }} == RedHat") or ("{{ ansible_distribution }} == CentOS")
+#       - "{{ ansible_distribution_major_version }} == 7"
+#       fail_msg: "Incompatible OS version detected"
+
+#   - name: Install oVirt repos
+#     yum:
+#       name: https://resources.ovirt.org/pub/yum-repo/ovirt-release43.rpm
+#       state: present
+
+#   - name: Install oVirt cockpit dashboard
+#     yum:
+#       name: cockpit-ovirt-dashboard
+#       state: present
+
+#   - name: Enable cockpit firewall ports
+#     firewalld:
+#       service: cockpit
+#       immediate: yes
+#       permanent: yes
+#       state: enabled
+
+#   - name: Enable cockpit
+#     systemd:
+#       name: cockpit.socket
+#       state: started
+
+#   # Now we need to bootstrap oVirt via cockpit http  :-(
+#   - name: Notify user
+#     debug:
+#       msg: "Please login to cockpit at https://{{ ansible_fqdn }}:9090 to complete the oVirt installation"
+
+
+# yum install ovirt-hosted-engine-setup
+
+# hosted-engine --deploy

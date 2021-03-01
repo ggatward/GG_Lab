@@ -58,11 +58,11 @@ echo logvol / --fstype xfs --name=lv_root --vgname=vg_sys --size=10240 --fsoptio
 echo logvol swap --fstype swap --name=lv_swap --vgname=vg_sys --size=${vir_mem} >> /tmp/diskpart.cfg
 echo logvol /home --fstype xfs --name=lv_home --vgname=vg_sys --size=10240 --fsoptions="noatime,nosuid,nodev" >> /tmp/diskpart.cfg
 echo logvol /tmp --fstype xfs --name=lv_tmp --vgname=vg_sys --size=4096 --fsoptions="noatime,nosuid,nodev" >> /tmp/diskpart.cfg
-echo logvol /var --fstype xfs --name=lv_var --vgname=vg_sys --size=5120 --fsoptions="noatime,nosuid,nodev" >> /tmp/diskpart.cfg
+echo logvol /var --fstype xfs --name=lv_var --vgname=vg_sys --size=20480 --fsoptions="noatime,nosuid,nodev" >> /tmp/diskpart.cfg
 echo logvol /opt --fstype xfs --name=lv_opt --vgname=vg_sys --size=2048 --fsoptions="noatime,nosuid,nodev" >> /tmp/diskpart.cfg
-echo logvol /var/log/ --fstype xfs --name=lv_log --vgname=vg_sys --size=4096 --fsoptions="noatime,nosuid,nodev,noexec" >> /tmp/diskpart.cfg
-echo logvol /var/log/audit --fstype xfs --name=lv_audit --vgname=vg_sys --size=1024 --fsoptions="noatime,nosuid,nodev,noexec" >> /tmp/diskpart.cfg
-
+echo logvol /var/log/ --fstype xfs --name=lv_log --vgname=vg_sys --size=8192 --fsoptions="noatime,nosuid,nodev,noexec" >> /tmp/diskpart.cfg
+echo logvol /var/log/audit --fstype xfs --name=lv_audit --vgname=vg_sys --size=2048 --fsoptions="noatime,nosuid,nodev,noexec" >> /tmp/diskpart.cfg
+echo logvol /var/crash --fstype xfs --name=lv_crash --vgname=vg_sys --size=10240 --fsoptions="noatime,nosuid,nodev,noexec" >> /tmp/diskpart.cfg
 %end
 
 
