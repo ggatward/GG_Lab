@@ -97,6 +97,18 @@
         cacert_method: insecure
         autoAcceptDefault: True
 
+  - name: Check if Engine health page is up
+    tags:
+    - always
+    uri:
+      url: "http://{{ ansible_fqdn }}/ovirt-engine/services/health"
+      status_code: 200
+    register: health_page
+    retries: 30
+    delay: 10
+    until: health_page is success
+
+
 
 - name: Configure oVirt Engine
   remote_user: svc-ansible
@@ -111,7 +123,7 @@
     ovirt.ovirt.ovirt_auth:
       url: https://{{ ansible_fqdn }}/ovirt-engine/api
       username: admin@internal
-      password: "{{ vault_ovirt_admin_password }}"
+      password: "{{ vault_ovirt_admin_pass }}"
 
   - name: Remove default cluster
     ovirt_cluster:
@@ -130,6 +142,7 @@
       auth: "{{ ovirt_auth }}"
       name: "{{ ovirt_datacenter_name }}"
       state: present
+      local: True
 
   - name: Create custom cluster
     ovirt_cluster:
@@ -138,9 +151,12 @@
       data_center: "{{ ovirt_datacenter_name }}"
       state: present
       ballooning: true
+      cpu_arch: x86_64
       firewall_type: firewalld
+      memory_policy: server
       migration_policy: minimal_downtime
       resilience_policy: migrate
+      scheduling_policy: evenly_distributed
       switch_type: legacy
 
   - name: Configure LDAP admin group
