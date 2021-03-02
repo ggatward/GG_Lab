@@ -46,8 +46,12 @@
   - vault.yml
   tasks:
   - name: Install oVirt Engine
+    tags:
+    - ovirt
+    - ovirt_engine
+    - ovirt_engine_install
     import_role:
-      name: ovirt.engine_setup
+      name: engine_setup
     vars:
       ovirt_engine_setup_version: "4.4"
       ovirt_engine_setup_organization: "GatwardIT"
@@ -55,95 +59,106 @@
       ovirt_engine_setup_firewall_manager: firewalld
       ovirt_engine_setup_admin_password: "{{ vault_ovirt_admin_pass }}"
       ovirt_engine_grafana_enable: false
+    when: ovirt_bootstrap_engine is defined and ovirt_bootstrap_engine|bool
+
+  - name: set up TLS for engine services
+    tags:
+    - ovirt
+    - ovirt_engine
+    - ovirt_ssl
+    import_role:
+      name: ansible-role-ovirt-ssl
+    vars:
+      httpd_key_file: /etc/pki/tls/private/{{ ansible_fqdn }}.key
+      httpd_cert_file: /etc/pki/tls/certs/{{ ansible_fqdn }}.pem
+      httpd_ca_cert: "{{ lookup('file', '/etc/ipa/ca.crt') }}"
+
+  - name: set up LDAP auth
+    tags:
+    - ovirt
+    - ovirt_engine
+    - ovirt_ldap
+    import_role:
+      name: ansible-role-ovirt-ldap
+    vars:
+      ovirt_engine_ldap_setup:
+        aaaProfileName: "{{ ovirt_ldap_profile_name }}"
+        profile: ipa
+        useDNS: True
+        serverset: round-robin
+        protocol: starttls
+        hosts: ipa01.ipa.home.gatwards.org ipa02.ipa.home.gatwards.org
+        user: uid=svc-ovirt,cn=users,cn=accounts,dc=ipa,dc=home,dc=gatwards,dc=org
+        baseDN: dc=ipa,dc=home,dc=gatwards,dc=org
+        password: "{{ vault_ovirt_ldap_password }}"
+        toolEnable: False
+        configOverwrite: True
+        useVmSso: False
+        cacert_method: insecure
+        autoAcceptDefault: True
 
 
+- name: Configure oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  collections:
+  - ovirt.ovirt
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Obtain SSO token with using username/password credentials
+    ovirt.ovirt.ovirt_auth:
+      url: https://{{ ansible_fqdn }}/ovirt-engine/api
+      username: admin@internal
+      password: "{{ vault_ovirt_admin_password }}"
 
-# - name: Configure oVirt Engine
-#   remote_user: svc-ansible
-#   become: true
-#   hosts: ovirt_engine
-#   vars_files:
-#   - vault.yml
-#   tasks:
-#   - name: set up TLS for engine services
-#     tags:
-#     - ovirt
-#     - ovirt_engine
-#     - ovirt_ssl
-#     import_role:
-#       name: ansible-role-ovirt-ssl
-#     vars:
-#       httpd_key_file: /etc/pki/tls/private/{{ ansible_fqdn }}.key
-#       httpd_cert_file: /etc/pki/tls/certs/{{ ansible_fqdn }}.pem
-#       httpd_ca_cert: "{{ lookup('file', '/etc/ipa/ca.crt') }}"
+  - name: Remove default cluster
+    ovirt_cluster:
+      auth: "{{ ovirt_auth }}"
+      name: Default
+      state: absent
 
-#   - name: set up LDAP auth
-#     tags:
-#     - ovirt
-#     - ovirt_engine
-#     - ovirt_ldap
-#     import_role:
-#       name: ansible-role-ovirt-ldap
-#     vars:
-#       ovirt_engine_ldap_setup:
-#         aaaProfileName: gatwards.org
-#         profile: ipa
-#         useDNS: True
-#         serverset: round-robin
-#         protocol: starttls
-#         hosts: ipa1.ipa.home.gatwards.org ipa2.ipa.home.gatwards.org
-#         user: uid=svc-ovirt,cn=users,cn=accounts,dc=ipa,dc=home,dc=gatwards,dc=org
-#         baseDN: dc=ipa,dc=home,dc=gatwards,dc=org
-#         password: "{{ vault_ovirt_ldap_password }}"
-#         toolEnable: False
-#         configOverwrite: True
-#         useVmSso: False
-#         cacert_method: insecure
-#         autoAcceptDefault: True
+  - name: Remove default datacenter
+    ovirt_datacenter:
+      auth: "{{ ovirt_auth }}"
+      name: Default
+      state: absent
 
+  - name: Create custom datacenter
+    ovirt_datacenter:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ ovirt_datacenter_name }}"
+      state: present
 
+  - name: Create custom cluster
+    ovirt_cluster:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ ovirt_cluster_name }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      state: present
+      ballooning: true
+      firewall_type: firewalld
+      migration_policy: minimal_downtime
+      resilience_policy: migrate
+      switch_type: legacy
 
-# - name: oVirt Host
-#   remote_user: svc-ansible
-#   become: true
-#   hosts: ovirt
+  - name: Configure LDAP admin group
+    ovirt_group:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ ovirt_ldap_admins_group }}"
+      domain: "{{ ovirt_ldap_profile_name }}-authz"
 
-#   tasks:
-#   - name: Check correct OS version
-#     assert:
-#       that:
-#       - ("{{ ansible_distribution }} == RedHat") or ("{{ ansible_distribution }} == CentOS")
-#       - "{{ ansible_distribution_major_version }} == 7"
-#       fail_msg: "Incompatible OS version detected"
+  - name: Grant admin group permissions
+    ovirt_permission:
+      auth: "{{ ovirt_auth }}"
+      group_name: "{{ ovirt_ldap_admins_group }}"
+      authz_name: "{{ ovirt_ldap_profile_name }}-authz"
+      object_type: data_center
+      object_name: "{{ ovirt_datacenter_name }}"
+      role: SuperUser
 
-#   - name: Install oVirt repos
-#     yum:
-#       name: https://resources.ovirt.org/pub/yum-repo/ovirt-release43.rpm
-#       state: present
-
-#   - name: Install oVirt cockpit dashboard
-#     yum:
-#       name: cockpit-ovirt-dashboard
-#       state: present
-
-#   - name: Enable cockpit firewall ports
-#     firewalld:
-#       service: cockpit
-#       immediate: yes
-#       permanent: yes
-#       state: enabled
-
-#   - name: Enable cockpit
-#     systemd:
-#       name: cockpit.socket
-#       state: started
-
-#   # Now we need to bootstrap oVirt via cockpit http  :-(
-#   - name: Notify user
-#     debug:
-#       msg: "Please login to cockpit at https://{{ ansible_fqdn }}:9090 to complete the oVirt installation"
-
-
-# yum install ovirt-hosted-engine-setup
-
-# hosted-engine --deploy
+  - name: Always revoke the SSO token
+    ovirt_auth:
+      state: absent
+      ovirt_auth: "{{ ovirt_auth }}"
