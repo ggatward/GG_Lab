@@ -34,6 +34,7 @@
     dnf:
       name: ovirt-engine
       state: present
+    register: packages
 
 
 - name: Install oVirt Engine
@@ -59,7 +60,7 @@
       ovirt_engine_setup_firewall_manager: firewalld
       ovirt_engine_setup_admin_password: "{{ vault_ovirt_admin_pass }}"
       ovirt_engine_grafana_enable: false
-    when: ovirt_bootstrap_engine is defined and ovirt_bootstrap_engine|bool
+    when: (ovirt_bootstrap_engine is defined and ovirt_bootstrap_engine|bool) or packages.changed
 
   - name: set up TLS for engine services
     tags:

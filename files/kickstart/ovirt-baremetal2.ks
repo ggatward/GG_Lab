@@ -6,7 +6,9 @@ selinux --enforcing
 keyboard us
 skipx
 
-network --bootproto static --ip=172.22.4.12 --netmask=255.255.255.0 --gateway=172.22.4.1 --nameserver=172.22.1.3,172.22.1.5 --mtu=9000 --hostname baremetal2.lab.home.gatwards.org --device=ac:1f:6b:44:7a:e6
+network --device=ac:1f:6b:44:7a:e6 --bootproto static --ip=172.22.4.12 --netmask=255.255.255.0 --gateway=172.22.4.1 --nameserver=172.22.1.3,172.22.1.5 --mtu=9000
+network --hostname baremetal2.lab.home.gatwards.org
+
 rootpw --iscrypted $6$1aFgyHgQfesAR4Jj$6R2B8AujvAGO/qIQUyX3JgrWCfUowzwyLIY9AM4SMoH.z2VTasva3Z77eku4uxE9ylfT7FqbH7H9iVfMomdg7.
 firewall --service=ssh
 
@@ -83,34 +85,33 @@ exec < /dev/tty3 > /dev/tty3
 /usr/bin/chvt 3
 (
 
-cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eno1
-BOOTPROTO="none"
-IPADDR="172.22.4.12"
-NETMASK="255.255.255.0"
-GATEWAY="172.22.4.1"
-DOMAIN="lab.home.gatwards.org"
-DEVICE=eno1
-HWADDR="ac:1f:6b:44:7a:e6"
-ONBOOT=yes
-PEERDNS=yes
-PEERROUTES=yes
-DEFROUTE=yes
-DNS1="172.22.1.3"
-DNS2="172.22.1.5"
-MTU=9000
-EOF
-
-
+#cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eno1
+#BOOTPROTO="none"
+#IPADDR="172.22.4.12"
+#NETMASK="255.255.255.0"
+#GATEWAY="172.22.4.1"
+#DOMAIN="lab.home.gatwards.org"
+#DEVICE=eno1
+#HWADDR="ac:1f:6b:44:7a:e6"
+#ONBOOT=yes
+#PEERDNS=yes
+#PEERROUTES=yes
+#DEFROUTE=yes
+#DNS1="172.22.1.3"
+#DNS2="172.22.1.5"
+#MTU=9000
+#EOF
 
 # Copy root SSH key for bootstrap
-mkdir -p /root/.ssh && chmod 700 /root/.ssh
-cat << EOF > /root/.ssh/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCu4S8wzEwXIVuHD+KK7y08lravhF5BvApvXRAPXXeaHtQ3HeYN+7t9HpyIQYg6OwsxNX7WbKgZ50Ok12t3EPRbEr8M9wWW+S5l0SJlzv7h26uNcIucFvlo5aPmV+XLFY7qokaKPaMEwrb7wG/gBTfsjLbhFNFXfT1bEMEp87/K6LUwoNQ3dBrZq5UWYuvMMW4kMH1igKB9dCWraHGqzlyJh4ol9XApPaDfJ8ujSiNs7NzZhUFeYpGC/eMAwnuhFWUZf/SJJJ53Y6AmPTBZVmpPbaJSNnakWssAG54t6Ay3orVi+cvvQlIB2oyilxE06i7FXgZSouwtJAk0Q2E/4mfj root@localhost.localdomain
-EOF
-chmod 600 /root/.ssh/authorized_keys
-restorecon -Rv /root
+#mkdir -p /root/.ssh && chmod 700 /root/.ssh
+#cat << EOF > /root/.ssh/authorized_keys
+#ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCu4S8wzEwXIVuHD+KK7y08lravhF5BvApvXRAPXXeaHtQ3HeYN+7t9HpyIQYg6OwsxNX7WbKgZ50Ok12t3EPRbEr8M9wWW+S5l0SJlzv7h26uNcIucFvlo5aPmV+XLFY7qokaKPaMEwrb7wG/gBTfsjLbhFNFXfT1bEMEp87/K6LUwoNQ3dBrZq5UWYuvMMW4kMH1igKB9dCWraHGqzlyJh4ol9XApPaDfJ8ujSiNs7NzZhUFeYpGC/eMAwnuhFWUZf/SJJJ53Y6AmPTBZVmpPbaJSNnakWssAG54t6Ay3orVi+cvvQlIB2oyilxE06i7FXgZSouwtJAk0Q2E/4mfj root@localhost.localdomain
+#EOF
+#chmod 600 /root/.ssh/authorized_keys
+#restorecon -Rv /root
 
 
+# Copy Ansible SSH key
 useradd svc-ansible
 cat << EOF > /etc/sudoers.d/svc-ansible
 svc-ansible	ALL = (ALL)	NOPASSWD : ALL
