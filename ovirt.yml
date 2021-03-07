@@ -2,17 +2,23 @@
 - name: Prepare oVirt Engine
   remote_user: svc-ansible
   become: true
-  hosts: ovirt_engine
+  hosts: ovirt
   tasks:
   - name: Configure oVirt repos
     tags:
     - ovirt
-    - ovirt_engine
+    - ovirt_repos
     yum:
       name: https://resources.ovirt.org/pub/yum-repo/ovirt-release44.rpm
       state: present
       disable_gpg_check: true
 
+
+- name: Prepare oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  tasks:
   # DNF module doesn't seem to fully work with modules yet
   - name: Enable prerequisite DNF modules
     tags:
@@ -98,6 +104,16 @@
         cacert_method: insecure
         autoAcceptDefault: True
 
+
+- name: Configure oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  collections:
+  - ovirt.ovirt
+  vars_files:
+  - vault.yml
+  tasks:
   - name: Check if Engine health page is up
     tags:
     - always
@@ -109,43 +125,42 @@
     delay: 10
     until: health_page is success
 
-
-
-- name: Configure oVirt Engine
-  remote_user: svc-ansible
-  become: true
-  hosts: ovirt_engine
-  collections:
-  - ovirt.ovirt
-  vars_files:
-  - vault.yml
-  tasks:
   - name: Obtain SSO token with using username/password credentials
+    tags:
+    - always
     ovirt.ovirt.ovirt_auth:
       url: https://{{ ansible_fqdn }}/ovirt-engine/api
       username: admin@internal
       password: "{{ vault_ovirt_admin_pass }}"
 
   - name: Remove default cluster
+    tags:
+    - ovirt_cluster
     ovirt_cluster:
       auth: "{{ ovirt_auth }}"
       name: Default
       state: absent
 
   - name: Remove default datacenter
+    tags:
+    - ovirt_cluster
     ovirt_datacenter:
       auth: "{{ ovirt_auth }}"
       name: Default
       state: absent
 
   - name: Create custom datacenter
+    tags:
+    - ovirt_cluster
     ovirt_datacenter:
       auth: "{{ ovirt_auth }}"
       name: "{{ ovirt_datacenter_name }}"
       state: present
-      local: True
+      local: False
 
   - name: Create custom cluster
+    tags:
+    - ovirt_cluster
     ovirt_cluster:
       auth: "{{ ovirt_auth }}"
       name: "{{ ovirt_cluster_name }}"
@@ -161,12 +176,16 @@
       switch_type: legacy
 
   - name: Configure LDAP admin group
+    tags:
+    - ovirt_auth
     ovirt_group:
       auth: "{{ ovirt_auth }}"
       name: "{{ ovirt_ldap_admins_group }}"
       domain: "{{ ovirt_ldap_profile_name }}-authz"
 
   - name: Grant admin group permissions
+    tags:
+    - ovirt_auth
     ovirt_permission:
       auth: "{{ ovirt_auth }}"
       group_name: "{{ ovirt_ldap_admins_group }}"
@@ -175,7 +194,143 @@
       object_name: "{{ ovirt_datacenter_name }}"
       role: SuperUser
 
+  # We can only add ONE host without a datastore being present
+  - name: Add first hypervisor host
+    tags:
+    - ovirt_hosts
+    ovirt_host:
+      auth: "{{ ovirt_auth }}"
+      cluster: "{{ ovirt_cluster_name }}"
+      name: "{{ hostvars[groups['ovirt_node'][0]]['inventory_hostname'] }}"
+      password: "{{ vault_ovirt_node_root_pass }}"
+      address: "{{ hostvars[groups['ovirt_node'][0]]['ansible_host'] }}"
+      kdump_integration: disabled
+      # kernel_params:
+      # - kvm-intel.nested=1
+      # - intel_iommu=on
+      power_management_enabled: false
+
+  # Datastores need a host so needs to be created AFTER the first host
+  - name: Configure VMstore datastore
+    tags:
+    - ovirt_storage
+    ovirt_storage_domain:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ item.name }}"
+      state: "{{ item.state }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      nfs:
+        address: "{{ item.nfs_address }}"
+        path: "{{ item.nfs_path }}"
+        version: "{{ item.nfs_version }}"
+    loop: "{{ ovirt_datastores }}"
+
+  # Remaining hosts can now be added
+  - name: Add hypervisor hosts
+    tags:
+    - ovirt_hosts
+    ovirt_host:
+      auth: "{{ ovirt_auth }}"
+      cluster: "{{ ovirt_cluster_name }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      password: "{{ vault_ovirt_node_root_pass }}"
+      address: "{{ hostvars[item]['ansible_host'] }}"
+      kdump_integration: disabled
+      # kernel_params:
+      # - kvm-intel.nested=1
+      # - intel_iommu=on
+      power_management_enabled: false
+    loop: "{{ groups['ovirt_node'] }}"
+
+  # Create networks at the cluster level
+  - name: Configure ovirtmgmt network
+    ovirt_network:
+      auth: "{{ ovirt_auth }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      clusters:
+      - name: "{{ ovirt_cluster_name }}"
+        assigned: true
+        display: true
+        migration: false
+        required: true
+      name: ovirtmgmt
+      mtu: 1500
+      vm_network: true
+
+  - name: Configure migration network
+    ovirt_network:
+      auth: "{{ ovirt_auth }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      clusters:
+      - name: "{{ ovirt_cluster_name }}"
+        assigned: true
+        display: false
+        migration: true
+        required: true
+      name: migration
+      mtu: 9000
+      vm_network: true
+
+  # Create guest networks
+  - name: Configure VLAN networks
+    ovirt_network:
+      auth: "{{ ovirt_auth }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      clusters:
+      - name: "{{ ovirt_cluster_name }}"
+        assigned: true
+        display: false
+        migration: false
+        required: true
+      name: "{{ item.name }}"
+      vlan_tag: "{{ item.vlan }}"
+      mtu: "{{ item.mtu }}"
+      vm_network: true
+    loop: "{{ ovirt_networks }}"
+
+  # Assign networks to the hosts
+  - name: Configure ovirtmgmt interface
+    ovirt_host_network:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      interface: "{{ hostvars[item]['ovirt_mgmt_interface'] }}"
+      networks:
+      - name: ovirtmgmt
+        boot_protocol: static
+        address: "{{ hostvars[item]['ovirt_mgmt_ip'] }}"
+        netmask: "{{ hostvars[item]['ovirt_mgmt_netmask'] }}"
+        gateway: "{{ hostvars[item]['ovirt_mgmt_gateway'] }}"
+        version: v4
+    loop: "{{ groups['ovirt_node'] }}"
+
+  - name: Configure migration interface
+    ovirt_host_network:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      interface: "{{ hostvars[item]['ovirt_migration_interface'] }}"
+      networks:
+      - name: migration
+        boot_protocol: static
+        address: "{{ hostvars[item]['ovirt_migration_ip'] }}"
+        netmask: "{{ hostvars[item]['ovirt_migration_netmask'] }}"
+        version: v4
+    loop: "{{ groups['ovirt_node'] }}"
+
+  # - name: Configure trunk interface
+  #   ovirt_host_network:
+  #     auth: "{{ ovirt_auth }}"
+  #     name: "{{ hostvars[item[0]]['inventory_hostname'] }}"
+  #     interface: "{{ hostvars[item[0]]['ovirt_trunk_interface'] }}"
+  #     networks:
+  #     - name: "{{ item[1].name }}"
+  #       boot_protocol: none
+  #   with_subelements:
+  #   - "{{ groups['ovirt_node'] }}"
+  #   - ovirt_networks
+
   - name: Always revoke the SSO token
+    tags:
+    - always
     ovirt_auth:
       state: absent
       ovirt_auth: "{{ ovirt_auth }}"

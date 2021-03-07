@@ -11,3 +11,24 @@ ovirt_ldap_profile_name: IPA
 ovirt_ldap_admins_group: ovirt_admins
 ovirt_datacenter_name: Home
 ovirt_cluster_name: LAB
+
+ovirt_datastores:
+- name: VMstore1
+  state: imported      # 'present' to create a NEW datastore, 'imported' to import existing volume
+  nfs_address: 172.22.1.240
+  nfs_path: /volume1/ovirt-vmstore1/vmstore
+  nfs_version: v3
+
+ovirt_networks:
+- name: VLAN3
+  vlan: 4
+  mtu: 9000
+- name: Lab
+  vlan: 4
+  mtu: 9000
+- name: VLAN5
+  vlan: 5
+  mtu: 9000
+- name: VLAN6
+  vlan: 6
+  mtu: 9000
