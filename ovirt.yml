@@ -399,3 +399,13 @@
       ovirt_exporter_user: 'admin@internal'
       ovirt_exporter_password: '{{ vault_ovirt_admin_pass }}'
       ovirt_exporter_password_file: /usr/local/etc/ovirt_pass
+
+- name: Open firewall port
+  tags:
+  - monitoring
+  - prometheus
+  firewalld:
+    port: 9325/tcp
+    immediate: yes
+    permanent: yes
+    state: enabled
