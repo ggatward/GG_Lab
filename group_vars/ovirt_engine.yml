@@ -21,7 +21,7 @@ ovirt_datastores:
 
 ovirt_networks:
 - name: VLAN3
-  vlan: 4
+  vlan: 3
   mtu: 9000
 - name: Lab
   vlan: 4
@@ -32,3 +32,19 @@ ovirt_networks:
 - name: VLAN6
   vlan: 6
   mtu: 9000
+
+ovirt_templates:
+- template_name: CentOS-7-x86_64-GenericCloud-2009
+  qcow_url: http://webshare.lab.home.gatwards.org/cloud_images/CentOS-7-x86_64-GenericCloud-2009.qcow2
+  template_cluster: "{{ ovirt_cluster_name }}"
+  template_memory: 4GiB
+  template_cpu: 2
+  template_disk_size: 10GiB
+  template_disk_storage: VMstore1
+- template_name: CentOS-8-GenericCloud-8.3.2011
+  qcow_url: http://webshare.lab.home.gatwards.org/cloud_images/CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64.qcow2
+  template_cluster: "{{ ovirt_cluster_name }}"
+  template_memory: 4GiB
+  template_cpu: 2
+  template_disk_size: 10GiB
+  template_disk_storage: VMstore1

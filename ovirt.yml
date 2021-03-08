@@ -58,7 +58,7 @@
     - ovirt_engine
     - ovirt_engine_install
     import_role:
-      name: engine_setup
+      name: ovirt.ovirt.engine_setup
     vars:
       ovirt_engine_setup_version: "4.4"
       ovirt_engine_setup_organization: "GatwardIT"
@@ -208,7 +208,7 @@
       # kernel_params:
       # - kvm-intel.nested=1
       # - intel_iommu=on
-      power_management_enabled: false
+      power_management_enabled: "{{ hostvars[groups['ovirt_node'][0]]['ovirt_power_management'] | default(false) }}"
 
   # Datastores need a host so needs to be created AFTER the first host
   - name: Configure VMstore datastore
@@ -239,11 +239,29 @@
       # kernel_params:
       # - kvm-intel.nested=1
       # - intel_iommu=on
-      power_management_enabled: false
+      power_management_enabled: "{{ hostvars[item]['ovirt_power_management'] | default(false) }}"
+    loop: "{{ groups['ovirt_node'] }}"
+
+  - name: Configure host power management
+    tags:
+    - ovirt_hosts
+    ovirt_host_pm:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      type: "{{ hostvars[item]['ovirt_power_mgmt_type'] }}"
+      address: "{{ hostvars[item]['ovirt_power_mgmt_address'] }}"
+      username: "{{ hostvars[item]['ovirt_power_mgmt_user'] }}"
+      password: "{{ hostvars[item]['ovirt_power_mgmt_password'] }}"
+      options:
+        privlvl: 'administrator'
+        lanplus: 'on'
+    when: hostvars[item]['ovirt_power_mgmt'] is defined and hostvars[item]['ovirt_power_mgmt']|bool
     loop: "{{ groups['ovirt_node'] }}"
 
   # Create networks at the cluster level
   - name: Configure ovirtmgmt network
+    tags:
+    - ovirt_network
     ovirt_network:
       auth: "{{ ovirt_auth }}"
       data_center: "{{ ovirt_datacenter_name }}"
@@ -258,6 +276,8 @@
       vm_network: true
 
   - name: Configure migration network
+    tags:
+    - ovirt_network
     ovirt_network:
       auth: "{{ ovirt_auth }}"
       data_center: "{{ ovirt_datacenter_name }}"
@@ -273,6 +293,8 @@
 
   # Create guest networks
   - name: Configure VLAN networks
+    tags:
+    - ovirt_network
     ovirt_network:
       auth: "{{ ovirt_auth }}"
       data_center: "{{ ovirt_datacenter_name }}"
@@ -290,6 +312,8 @@
 
   # Assign networks to the hosts
   - name: Configure ovirtmgmt interface
+    tags:
+    - ovirt_network
     ovirt_host_network:
       auth: "{{ ovirt_auth }}"
       name: "{{ hostvars[item]['inventory_hostname'] }}"
@@ -304,6 +328,8 @@
     loop: "{{ groups['ovirt_node'] }}"
 
   - name: Configure migration interface
+    tags:
+    - ovirt_network
     ovirt_host_network:
       auth: "{{ ovirt_auth }}"
       name: "{{ hostvars[item]['inventory_hostname'] }}"
@@ -316,17 +342,34 @@
         version: v4
     loop: "{{ groups['ovirt_node'] }}"
 
-  # - name: Configure trunk interface
-  #   ovirt_host_network:
-  #     auth: "{{ ovirt_auth }}"
-  #     name: "{{ hostvars[item[0]]['inventory_hostname'] }}"
-  #     interface: "{{ hostvars[item[0]]['ovirt_trunk_interface'] }}"
-  #     networks:
-  #     - name: "{{ item[1].name }}"
-  #       boot_protocol: none
-  #   with_subelements:
-  #   - "{{ groups['ovirt_node'] }}"
-  #   - ovirt_networks
+  - name: Configure trunk interface
+    tags:
+    - ovirt_network
+    ovirt_host_network:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item[0]]['inventory_hostname'] }}"
+      interface: "{{ hostvars[item[0]]['ovirt_trunk_interface'] }}"
+      networks:
+      - name: "{{ item[1].name }}"
+        boot_protocol: none
+    with_nested:
+    - "{{ groups['ovirt_node'] }}"
+    - "{{ ovirt_networks }}"
+
+  - name: Upload qcow templates
+    tags:
+    - ovirt_template
+    include_role:
+      name: ovirt.ovirt.image_template
+    vars:
+      template_name: "{{ item.template_name }}"
+      qcow_url: "{{ item.qcow_url }}"
+      template_cluster: "{{ item.template_cluster }}"
+      template_memory: "{{ item.template_memory }}"
+      template_cpu: "{{ item.template_cpu }}"
+      template_disk_size: "{{ item.template_disk_size }}"
+      template_disk_storage: "{{ item.template_disk_storage }}"
+    loop: "{{ ovirt_templates }}"
 
   - name: Always revoke the SSO token
     tags:

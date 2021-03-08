@@ -6,7 +6,8 @@ selinux --enforcing
 keyboard us
 skipx
 
-network --device=0c:c4:7a:a9:1f:08 --bootproto static --ip=172.22.4.11 --netmask=255.255.255.0 --gateway=172.22.4.1 --nameserver=172.22.1.3,172.22.1.5 --mtu=9000
+network --device=0c:c4:7a:a9:1f:08 --bootproto static --noipv6 --ip=172.22.4.11 --netmask=255.255.255.0 --gateway=172.22.4.1 --nameserver=172.22.1.3,172.22.1.5 --mtu=9000
+network --device=b4:96:91:09:96:c5 --bootproto static --noipv6 --ip=192.168.100.11 --netmask=255.255.255.0 --mtu=9000
 network --hostname baremetal1.lab.home.gatwards.org
 
 rootpw --iscrypted $6$1aFgyHgQfesAR4Jj$6R2B8AujvAGO/qIQUyX3JgrWCfUowzwyLIY9AM4SMoH.z2VTasva3Z77eku4uxE9ylfT7FqbH7H9iVfMomdg7.

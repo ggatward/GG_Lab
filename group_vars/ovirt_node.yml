@@ -10,3 +10,10 @@ ovirt_mgmt_gateway: 172.22.4.1
 ovirt_migration_interface: eno2
 ovirt_migration_netmask: 255.255.255.0
 ovirt_trunk_interface: ens5f1
+
+# Power management (fencing) parameters
+ovirt_power_mgmt: true
+ovirt_power_mgmt_type: ipmilan
+ovirt_power_mgmt_port: 623
+ovirt_power_mgmt_user: ovirt
+ovirt_power_mgmt_password: "{{ vault_ipmi_pass }}"

@@ -7,6 +7,7 @@ keyboard us
 skipx
 
 network --device=ac:1f:6b:44:7a:e6 --bootproto static --ip=172.22.4.12 --netmask=255.255.255.0 --gateway=172.22.4.1 --nameserver=172.22.1.3,172.22.1.5 --mtu=9000
+network --device=b4:96:91:23:31:75 --bootproto static --noipv6 --ip=192.168.100.12 --netmask=255.255.255.0 --mtu=9000
 network --hostname baremetal2.lab.home.gatwards.org
 
 rootpw --iscrypted $6$1aFgyHgQfesAR4Jj$6R2B8AujvAGO/qIQUyX3JgrWCfUowzwyLIY9AM4SMoH.z2VTasva3Z77eku4uxE9ylfT7FqbH7H9iVfMomdg7.
