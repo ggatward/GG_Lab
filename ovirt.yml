@@ -377,3 +377,25 @@
     ovirt_auth:
       state: absent
       ovirt_auth: "{{ ovirt_auth }}"
+
+
+# Monitoring stuff
+- name: Configure oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Install Prometheus ovirt installer
+    tags:
+    - monitoring
+    - prometheus
+    import_role:
+      name: ansible-ovirt-exporter
+    vars:
+      ovirt_exporter_scrape_uri: 'https://ovirt-engine.lab.home.gatwards.org/ovirt-engine/api/'
+      ovirt_exporter_ssl_verify: true
+      ovirt_exporter_user: 'admin@internal'
+      ovirt_exporter_password: '{{ vault_ovirt_admin_pass }}'
+      ovirt_exporter_password_file: /usr/local/etc/ovirt_pass
