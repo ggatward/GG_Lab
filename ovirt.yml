@@ -94,9 +94,9 @@
         useDNS: True
         serverset: round-robin
         protocol: starttls
-        hosts: ipa01.ipa.home.gatwards.org ipa02.ipa.home.gatwards.org
-        user: uid=svc-ovirt,cn=users,cn=accounts,dc=ipa,dc=home,dc=gatwards,dc=org
-        baseDN: dc=ipa,dc=home,dc=gatwards,dc=org
+        hosts: "{{ generic_ldap_servers | join(' ') }}"
+        user: uid=svc-ovirt,cn=users,cn=accounts,{{ generic_ldap_basedn }}
+        baseDN: "{{ generic_ldap_basedn }}"
         password: "{{ vault_ovirt_ldap_password }}"
         toolEnable: False
         configOverwrite: True
@@ -369,6 +369,7 @@
       template_cpu: "{{ item.template_cpu }}"
       template_disk_size: "{{ item.template_disk_size }}"
       template_disk_storage: "{{ item.template_disk_storage }}"
+      template_nics: []
     loop: "{{ ovirt_templates }}"
 
   - name: Always revoke the SSO token
@@ -394,7 +395,7 @@
     import_role:
       name: ansible-ovirt-exporter
     vars:
-      ovirt_exporter_scrape_uri: 'https://ovirt-engine.lab.home.gatwards.org/ovirt-engine/api/'
+      ovirt_exporter_scrape_uri: 'https://{{ ansible_fqdn }}/ovirt-engine/api/'
       ovirt_exporter_ssl_verify: true
       ovirt_exporter_user: 'admin@internal'
       ovirt_exporter_password: '{{ vault_ovirt_admin_pass }}'

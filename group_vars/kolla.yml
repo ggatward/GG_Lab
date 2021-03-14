@@ -1,0 +1,98 @@
+---
+ovirt_vms:
+- name: deploy
+  template: CentOS-8-GenericCloud-8.3.2011
+  memory: 2GiB
+  cpu_cores: 2
+  #clone: true
+  cloud_init:
+    host_name: deploy.osp.home.gatwards.org
+    root_password: "{{ vault_vm_root_password }}"
+    dns_servers: "{{ generic_dns_servers | join(' ') }}"
+    dns_search: osp.home.gatwards.org
+  cloud_init_nics:
+  - nic_name: eth0
+    nic_boot_protocol: static
+    nic_ip_address: 172.22.3.100
+    nic_netmask: 255.255.255.0
+    nic_gateway: 172.22.3.1
+    nic_on_boot: true
+  cluster: "{{ ovirt_cluster_name }}"
+  data_center: "{{ ovirt_datacenter_name }}"
+  disks:
+  - size: 80GiB
+    name: CentOS-8-GenericCloud-8.3.2011
+    interface: virtio
+    name_prefix: false
+    storage_domain: VMstore1
+  nics:
+  - name: eth0
+    network: VLAN3
+  state: running
+  tag:
+    - kolla
+    - openstack
+- name: control-1
+  template: CentOS-7-x86_64-GenericCloud-2009
+  memory: 12GiB
+  cpu_cores: 4
+  #clone: true
+  cloud_init:
+    host_name: control-1.osp.home.gatwards.org
+    root_password: "{{ vault_vm_root_password }}"
+    dns_servers: "{{ generic_dns_servers | join(' ') }}"
+    dns_search: osp.home.gatwards.org
+  cloud_init_nics:
+  - nic_name: eth0
+    nic_boot_protocol: static
+    nic_ip_address: 172.22.3.21
+    nic_netmask: 255.255.255.0
+    nic_gateway: 172.22.3.1
+    nic_on_boot: true
+  cluster: "{{ ovirt_cluster_name }}"
+  data_center: "{{ ovirt_datacenter_name }}"
+  disks:
+  - size: 120GiB
+    name: CentOS-7-x86_64-GenericCloud-2009
+    interface: virtio
+    name_prefix: false
+    storage_domain: VMstore1
+  nics:
+  - name: eth0
+    network: VLAN3
+  state: running
+  tag:
+    - kolla
+    - openstack
+- name: compute-1
+  template: CentOS-7-x86_64-GenericCloud-2009
+  memory: 8GiB
+  cpu_cores: 4
+  #clone: true
+  cloud_init:
+    host_name: compute-1.osp.home.gatwards.org
+    root_password: "{{ vault_vm_root_password }}"
+    dns_servers: "{{ generic_dns_servers | join(' ') }}"
+    dns_search: osp.home.gatwards.org
+  cloud_init_nics:
+  - nic_name: eth0
+    nic_boot_protocol: static
+    nic_ip_address: 172.22.3.31
+    nic_netmask: 255.255.255.0
+    nic_gateway: 172.22.3.1
+    nic_on_boot: true
+  cluster: "{{ ovirt_cluster_name }}"
+  data_center: "{{ ovirt_datacenter_name }}"
+  disks:
+  - size: 80GiB
+    name: CentOS-7-x86_64-GenericCloud-2009
+    interface: virtio
+    name_prefix: false
+    storage_domain: VMstore1
+  nics:
+  - name: eth0
+    network: VLAN3
+  state: running
+  tag:
+    - kolla
+    - openstack
