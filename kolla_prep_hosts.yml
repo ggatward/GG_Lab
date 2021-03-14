@@ -1,0 +1,151 @@
+---
+- name: Deploy SSH keys from deploy host
+  remote_user: svc-ansible
+  become: true
+  hosts: kolla
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Copy SSH public key
+    copy:
+      content: "{{ vault_ansible_ssh_public_key }}"
+      dest: /root/.ssh/authorized_keys
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Install packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    loop:
+    - epel-release
+    - python-pip
+
+  - name: Install pip modules
+    pip:
+      name: "{{ item }}"
+      state: present
+      umask: '0022'
+    loop:
+#    - 'pip==19.3.1'             # Latest pip BREAKS !!!
+    - docker
+
+
+- name: Prepare kolla hosts
+  remote_user: svc-ansible
+  become: true
+  hosts: kolla_control
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Install packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    loop:
+    - python-devel
+    - libffi-devel
+    - gcc
+    - openssl-devel
+    - libselinux-python
+    - python-virtualenv
+
+  - name: Set SELinux booleans
+    seboolean:
+      state: true
+      name: authlogin_nsswitch_use_ldap
+      persistent: yes
+
+  - name: Copy SSH private key
+    copy:
+      content: "{{ vault_ansible_ssh_private_key }}"
+      dest: /root/.ssh/id_rsa
+      owner: root
+      group: root
+      mode: '0600'
+
+  - name: Install pip modules
+    pip:
+      name: "{{ item }}"
+      state: present
+      umask: '0022'
+      virtualenv: /opt/venv/kolla
+    loop:
+    - 'pip==19.3.1'             # Latest pip BREAKS !!!
+    - 'ansible<2.9'             # kolla requires 2.7 or 2.8 - 2.9+ will NOT work
+    - 'kolla-ansible==7.1.0'    # 7.0.1 will install but no longer work due to docker RPM repo changes
+    - selinux
+    - openstackclient
+
+  - name: Fix 'import queue' issue in openstack utils
+    replace:
+      path: "{{ item }}"
+      regexp: '^import queue'
+      replace: 'import Queue'
+    loop:
+    - /opt/venv/kolla/lib/python2.7/site-packages/openstack/utils.py
+    - /opt/venv/kolla/lib/python2.7/site-packages/openstack/cloud/openstackcloud.py
+
+  - name: Configure docker repo
+    copy:
+      content: |
+        [docker]
+        baseurl = https://download.docker.com/linux/centos/7/$basearch/stable
+        gpgcheck = 1
+        gpgkey = https://download.docker.com/linux/centos/gpg
+        name = Docker main Repository
+      dest: /etc/yum.repos.d/docker.repo
+      owner: root
+      group: root
+      mode: '0644'
+
+  # We need docker installed and running to configure swift rings BEFORE kolla is bootstrappe
+  - name: Install docker
+    yum:
+      name: docker-ce
+      state: present
+
+  - name: Start docker
+    service:
+      name: docker
+      state: started
+
+  - name: Create /etc/kolla
+    file:
+      path: /etc/kolla
+      state: directory
+      owner: root
+      group: root
+      mode: '0755'
+
+  - name: Populate /etc/kolla from project_kolla
+    copy:
+      src: project_kolla/etc/kolla/
+      dest: /etc/kolla/
+
+  ####################
+  #   Octavia
+#  - block:
+#    - name: Generate octavia certs
+
+      # Update cert password reading it from  /etc/kolla/passwords.yml ( “octavia_ca_password”)
+
+      # cd /etc/kolla/scripts
+      # ./octavia_certgen.sh certs /etc/kolla/scripts/openssl.cnf 1000
+
+      # mkdir -p /etc/kolla/config/octavia
+      # cp certs/ca_01.pem /etc/kolla/config/octavia
+      # cp certs/client.pem /etc/kolla/config/octavia
+      # cp certs/private/cakey.pem /etc/kolla/config/octavia/
+#    when: octavia_newcerts is defined and octavia_newcerts|bool
+
+  ####################
+  #   Swift
+  - name: Regenerate swift rings
+    shell: cd /etc/kolla/scripts && sh ./swift_ring_builder.sh
+    when: swift_newrings is defined and swift_newrings|bool
+
+  - name: Format swift disks
+    shell: cd /etc/kolla/scripts && sh ./partition_swift_disks.sh
+    when: swift_formatdisks is defined and swift_formatdisks|bool

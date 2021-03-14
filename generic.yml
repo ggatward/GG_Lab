@@ -105,3 +105,4 @@
       immediate: yes
       permanent: yes
       state: enabled
+    when: firewall_service is not defined or (firewall_service is defined and firewall_service=='firewalld')

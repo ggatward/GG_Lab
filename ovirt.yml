@@ -410,3 +410,22 @@
     immediate: yes
     permanent: yes
     state: enabled
+
+
+- name: Update sssd config
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_node
+  tasks:
+  - name: Update sssd dynamic DNS interface
+    replace:
+      path: /etc/sssd/sssd.conf
+      regexp: '^dyndns_iface'
+      replace: 'dyndns_iface = ovirtmgmt'
+    register: sssd_conf
+
+  - name: Restart sssd
+    service:
+      name: sssd
+      state: restarted
+    when: sssd_conf.changed
