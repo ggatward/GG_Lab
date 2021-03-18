@@ -13,6 +13,10 @@ ansible-playbook -i hosts_lab.ini -u svc-ansible --vault-id vault@prompt kolla_p
   -e 'swift_newrings=true' -e 'swift_formatdisks=true'
 
 
+####################
+#   Kolla Mods
+# - /opt/venv/kolla/share/kolla-ansible/ansible/roles/prechecks/tasks/service_checks.yml
+#     Had to comment out the block in that deals with docker version check
 
 
 #############################################

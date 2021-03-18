@@ -124,6 +124,13 @@
       src: project_kolla/etc/kolla/
       dest: /etc/kolla/
 
+
+#   Kolla Mods
+# - /opt/venv/kolla/share/kolla-ansible/ansible/roles/prechecks/tasks/service_checks.yml
+#     Had to comment out the block in that deals with docker version check
+
+
+
   ####################
   #   Octavia
 #  - block:
@@ -139,6 +146,7 @@
       # cp certs/client.pem /etc/kolla/config/octavia
       # cp certs/private/cakey.pem /etc/kolla/config/octavia/
 #    when: octavia_newcerts is defined and octavia_newcerts|bool
+
 
   ####################
   #   Swift
