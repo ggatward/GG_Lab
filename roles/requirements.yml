@@ -1,0 +1,50 @@
+---
+roles:
+- name: ansible-generic-os
+  src: https://github.com/ggatward/ansible-role-generic-os.git
+  scm: git
+
+- src: https://github.com/ggatward/Ansible-RHEL7-CIS-Benchmarks.git
+  scm: git
+
+- src: https://github.com/ggatward/Ansible-RHEL8-CIS-Benchmarks.git
+  scm: git
+
+- src: https://github.com/ggatward/ansible-role-extra-hardening.git
+  scm: git
+
+- src: https://github.com/ggatward/ansible-ipaclient.git
+  scm: git
+
+- src: https://github.com/ggatward/ansible-role-cacerts.git
+  scm: git
+
+- src: https://github.com/adfinis-sygroup/ansible-role-hw_vm_tools.git
+  scm: git
+
+- src: https://github.com/ericsysmin/ansible-role-chrony.git
+  scm: git
+
+- src: https://github.com/geerlingguy/ansible-role-nginx.git
+  scm: git
+
+- src: https://github.com/mrlesmithjr/ansible-config-interfaces.git
+  scm: git
+
+- src: https://github.com/mrlesmithjr/ansible-kvm
+  scm: git
+
+- src: https://github.com/ggatward/ansible-role-ovirt-ldap.git
+  scm: git
+
+- src: https://github.com/ggatward/ansible-role-ovirt-ssl.git
+  scm: git
+
+- src: https://github.com/ggatward/ansible-node-exporter.git
+  scm: git
+
+- src: https://github.com/ggatward/ansible-ovirt-exporter.git
+  scm: git
+
+# - src: https://github.com/ggatward/ansible-ipmi-exporter.git
+#   scm: git

@@ -1,0 +1,50 @@
+---
+motd_role: oVirt Engine
+cis_level_1_exclusions: ['1.2.3','1.3.1','1.8','2.2.2','2.2.7','2.2.10','3.4.1','3.4.2','3.4.3','3.4.4','3.4.5','5.2.8','5.3.2']
+# 2.2.2 - Bug in hardening - X11 not present
+cis_httpd_install: { package: httpd, state: present, service: httpd, rstate: started, enabled: true, exception: 123 }
+
+
+ipaclient_ssl_create_certs: true
+
+ovirt_ldap_profile_name: IPA
+ovirt_ldap_admins_group: ovirt_admins
+ovirt_datacenter_name: Home
+ovirt_cluster_name: LAB
+
+ovirt_datastores:
+- name: VMstore1
+  state: imported      # 'present' to create a NEW datastore, 'imported' to import existing volume
+  nfs_address: 172.22.1.240
+  nfs_path: /volume1/ovirt-vmstore1/vmstore
+  nfs_version: v3
+
+ovirt_networks:
+- name: VLAN3
+  vlan: 3
+  mtu: 9000
+- name: Lab
+  vlan: 4
+  mtu: 9000
+- name: VLAN5
+  vlan: 5
+  mtu: 9000
+- name: VLAN6
+  vlan: 6
+  mtu: 9000
+
+ovirt_templates:
+- template_name: CentOS-7-x86_64-GenericCloud-2009
+  qcow_url: http://webshare.lab.home.gatwards.org/cloud_images/CentOS-7-x86_64-GenericCloud-2009.qcow2
+  template_cluster: "{{ ovirt_cluster_name }}"
+  template_memory: 4GiB
+  template_cpu: 2
+  template_disk_size: 10GiB
+  template_disk_storage: VMstore1
+- template_name: CentOS-8-GenericCloud-8.3.2011
+  qcow_url: http://webshare.lab.home.gatwards.org/cloud_images/CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64.qcow2
+  template_cluster: "{{ ovirt_cluster_name }}"
+  template_memory: 4GiB
+  template_cpu: 2
+  template_disk_size: 10GiB
+  template_disk_storage: VMstore1

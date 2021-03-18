@@ -1,0 +1,34 @@
+---
+- name: Check if Engine health page is up
+  tags:
+  - always
+  uri:
+    url: "http://{{ ansible_fqdn }}/ovirt-engine/services/health"
+    status_code: 200
+  register: health_page
+  retries: 30
+  delay: 10
+  until: health_page is success
+
+- name: Obtain SSO token with using username/password credentials
+  tags:
+  - always
+  ovirt.ovirt.ovirt_auth:
+    url: https://{{ ansible_fqdn }}/ovirt-engine/api
+    username: admin@internal
+    password: "{{ vault_ovirt_admin_pass }}"
+
+- name: Create oVirt VMs
+  tags:
+  - ovirt_vms
+  import_role:
+    name: ovirt.ovirt.vm_infra
+  vars:
+    vms: "{{ ovirt_vms }}"
+
+- name: Always revoke the SSO token
+  tags:
+  - always
+  ovirt_auth:
+    state: absent
+    ovirt_auth: "{{ ovirt_auth }}"

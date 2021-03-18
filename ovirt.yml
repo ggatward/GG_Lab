@@ -1,0 +1,431 @@
+---
+- name: Prepare oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt
+  tasks:
+  - name: Configure oVirt repos
+    tags:
+    - ovirt
+    - ovirt_repos
+    yum:
+      name: https://resources.ovirt.org/pub/yum-repo/ovirt-release44.rpm
+      state: present
+      disable_gpg_check: true
+
+
+- name: Prepare oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  tasks:
+  # DNF module doesn't seem to fully work with modules yet
+  - name: Enable prerequisite DNF modules
+    tags:
+    - ovirt
+    - ovirt_engine
+    command: "dnf module -y enable {{ item }}"
+    loop:
+    - 'javapackages-tools'
+    - 'pki-deps'
+    - 'postgresql:12'
+    changed_when: false
+    args:
+      warn: false
+
+  - name: Install engine packages
+    tags:
+    - ovirt
+    - ovirt_engine
+    dnf:
+      name: ovirt-engine
+      state: present
+    register: packages
+
+
+- name: Install oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  collections:
+  - ovirt.ovirt
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Install oVirt Engine
+    tags:
+    - ovirt
+    - ovirt_engine
+    - ovirt_engine_install
+    import_role:
+      name: ovirt.ovirt.engine_setup
+    vars:
+      ovirt_engine_setup_version: "4.4"
+      ovirt_engine_setup_organization: "GatwardIT"
+      ovirt_engine_setup_fqdn: "{{ ansible_fqdn }}"
+      ovirt_engine_setup_firewall_manager: firewalld
+      ovirt_engine_setup_admin_password: "{{ vault_ovirt_admin_pass }}"
+      ovirt_engine_grafana_enable: false
+    when: (ovirt_bootstrap_engine is defined and ovirt_bootstrap_engine|bool) or packages.changed
+
+  - name: set up TLS for engine services
+    tags:
+    - ovirt
+    - ovirt_engine
+    - ovirt_ssl
+    import_role:
+      name: ansible-role-ovirt-ssl
+    vars:
+      httpd_key_file: /etc/pki/tls/private/{{ ansible_fqdn }}.key
+      httpd_cert_file: /etc/pki/tls/certs/{{ ansible_fqdn }}.pem
+      httpd_ca_cert: "{{ lookup('file', '/etc/ipa/ca.crt') }}"
+
+  - name: set up LDAP auth
+    tags:
+    - ovirt
+    - ovirt_engine
+    - ovirt_ldap
+    import_role:
+      name: ansible-role-ovirt-ldap
+    vars:
+      ovirt_engine_ldap_setup:
+        aaaProfileName: "{{ ovirt_ldap_profile_name }}"
+        profile: ipa
+        useDNS: True
+        serverset: round-robin
+        protocol: starttls
+        hosts: "{{ generic_ldap_servers | join(' ') }}"
+        user: uid=svc-ovirt,cn=users,cn=accounts,{{ generic_ldap_basedn }}
+        baseDN: "{{ generic_ldap_basedn }}"
+        password: "{{ vault_ovirt_ldap_password }}"
+        toolEnable: False
+        configOverwrite: True
+        useVmSso: False
+        cacert_method: insecure
+        autoAcceptDefault: True
+
+
+- name: Configure oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  collections:
+  - ovirt.ovirt
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Check if Engine health page is up
+    tags:
+    - always
+    uri:
+      url: "http://{{ ansible_fqdn }}/ovirt-engine/services/health"
+      status_code: 200
+    register: health_page
+    retries: 30
+    delay: 10
+    until: health_page is success
+
+  - name: Obtain SSO token with using username/password credentials
+    tags:
+    - always
+    ovirt.ovirt.ovirt_auth:
+      url: https://{{ ansible_fqdn }}/ovirt-engine/api
+      username: admin@internal
+      password: "{{ vault_ovirt_admin_pass }}"
+
+  - name: Remove default cluster
+    tags:
+    - ovirt_cluster
+    ovirt_cluster:
+      auth: "{{ ovirt_auth }}"
+      name: Default
+      state: absent
+
+  - name: Remove default datacenter
+    tags:
+    - ovirt_cluster
+    ovirt_datacenter:
+      auth: "{{ ovirt_auth }}"
+      name: Default
+      state: absent
+
+  - name: Create custom datacenter
+    tags:
+    - ovirt_cluster
+    ovirt_datacenter:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ ovirt_datacenter_name }}"
+      state: present
+      local: False
+
+  - name: Create custom cluster
+    tags:
+    - ovirt_cluster
+    ovirt_cluster:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ ovirt_cluster_name }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      state: present
+      ballooning: true
+      cpu_arch: x86_64
+      firewall_type: firewalld
+      memory_policy: server
+      migration_policy: minimal_downtime
+      resilience_policy: migrate
+      scheduling_policy: evenly_distributed
+      switch_type: legacy
+
+  - name: Configure LDAP admin group
+    tags:
+    - ovirt_auth
+    ovirt_group:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ ovirt_ldap_admins_group }}"
+      domain: "{{ ovirt_ldap_profile_name }}-authz"
+
+  - name: Grant admin group permissions
+    tags:
+    - ovirt_auth
+    ovirt_permission:
+      auth: "{{ ovirt_auth }}"
+      group_name: "{{ ovirt_ldap_admins_group }}"
+      authz_name: "{{ ovirt_ldap_profile_name }}-authz"
+      object_type: data_center
+      object_name: "{{ ovirt_datacenter_name }}"
+      role: SuperUser
+
+  # We can only add ONE host without a datastore being present
+  - name: Add first hypervisor host
+    tags:
+    - ovirt_hosts
+    ovirt_host:
+      auth: "{{ ovirt_auth }}"
+      cluster: "{{ ovirt_cluster_name }}"
+      name: "{{ hostvars[groups['ovirt_node'][0]]['inventory_hostname'] }}"
+      password: "{{ vault_ovirt_node_root_pass }}"
+      address: "{{ hostvars[groups['ovirt_node'][0]]['ansible_host'] }}"
+      kdump_integration: disabled
+      # kernel_params:
+      # - kvm-intel.nested=1
+      # - intel_iommu=on
+      power_management_enabled: "{{ hostvars[groups['ovirt_node'][0]]['ovirt_power_management'] | default(false) }}"
+
+  # Datastores need a host so needs to be created AFTER the first host
+  - name: Configure VMstore datastore
+    tags:
+    - ovirt_storage
+    ovirt_storage_domain:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ item.name }}"
+      state: "{{ item.state }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      nfs:
+        address: "{{ item.nfs_address }}"
+        path: "{{ item.nfs_path }}"
+        version: "{{ item.nfs_version }}"
+    loop: "{{ ovirt_datastores }}"
+
+  # Remaining hosts can now be added
+  - name: Add hypervisor hosts
+    tags:
+    - ovirt_hosts
+    ovirt_host:
+      auth: "{{ ovirt_auth }}"
+      cluster: "{{ ovirt_cluster_name }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      password: "{{ vault_ovirt_node_root_pass }}"
+      address: "{{ hostvars[item]['ansible_host'] }}"
+      kdump_integration: disabled
+      # kernel_params:
+      # - kvm-intel.nested=1
+      # - intel_iommu=on
+      power_management_enabled: "{{ hostvars[item]['ovirt_power_management'] | default(false) }}"
+    loop: "{{ groups['ovirt_node'] }}"
+
+  - name: Configure host power management
+    tags:
+    - ovirt_hosts
+    ovirt_host_pm:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      type: "{{ hostvars[item]['ovirt_power_mgmt_type'] }}"
+      address: "{{ hostvars[item]['ovirt_power_mgmt_address'] }}"
+      username: "{{ hostvars[item]['ovirt_power_mgmt_user'] }}"
+      password: "{{ hostvars[item]['ovirt_power_mgmt_password'] }}"
+      options:
+        privlvl: 'administrator'
+        lanplus: 'on'
+    when: hostvars[item]['ovirt_power_mgmt'] is defined and hostvars[item]['ovirt_power_mgmt']|bool
+    loop: "{{ groups['ovirt_node'] }}"
+
+  # Create networks at the cluster level
+  - name: Configure ovirtmgmt network
+    tags:
+    - ovirt_network
+    ovirt_network:
+      auth: "{{ ovirt_auth }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      clusters:
+      - name: "{{ ovirt_cluster_name }}"
+        assigned: true
+        display: true
+        migration: false
+        required: true
+      name: ovirtmgmt
+      mtu: 1500
+      vm_network: true
+
+  - name: Configure migration network
+    tags:
+    - ovirt_network
+    ovirt_network:
+      auth: "{{ ovirt_auth }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      clusters:
+      - name: "{{ ovirt_cluster_name }}"
+        assigned: true
+        display: false
+        migration: true
+        required: true
+      name: migration
+      mtu: 9000
+      vm_network: true
+
+  # Create guest networks
+  - name: Configure VLAN networks
+    tags:
+    - ovirt_network
+    ovirt_network:
+      auth: "{{ ovirt_auth }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      clusters:
+      - name: "{{ ovirt_cluster_name }}"
+        assigned: true
+        display: false
+        migration: false
+        required: true
+      name: "{{ item.name }}"
+      vlan_tag: "{{ item.vlan }}"
+      mtu: "{{ item.mtu }}"
+      vm_network: true
+    loop: "{{ ovirt_networks }}"
+
+  # Assign networks to the hosts
+  - name: Configure ovirtmgmt interface
+    tags:
+    - ovirt_network
+    ovirt_host_network:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      interface: "{{ hostvars[item]['ovirt_mgmt_interface'] }}"
+      networks:
+      - name: ovirtmgmt
+        boot_protocol: static
+        address: "{{ hostvars[item]['ovirt_mgmt_ip'] }}"
+        netmask: "{{ hostvars[item]['ovirt_mgmt_netmask'] }}"
+        gateway: "{{ hostvars[item]['ovirt_mgmt_gateway'] }}"
+        version: v4
+    loop: "{{ groups['ovirt_node'] }}"
+
+  - name: Configure migration interface
+    tags:
+    - ovirt_network
+    ovirt_host_network:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      interface: "{{ hostvars[item]['ovirt_migration_interface'] }}"
+      networks:
+      - name: migration
+        boot_protocol: static
+        address: "{{ hostvars[item]['ovirt_migration_ip'] }}"
+        netmask: "{{ hostvars[item]['ovirt_migration_netmask'] }}"
+        version: v4
+    loop: "{{ groups['ovirt_node'] }}"
+
+  - name: Configure trunk interface
+    tags:
+    - ovirt_network
+    ovirt_host_network:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item[0]]['inventory_hostname'] }}"
+      interface: "{{ hostvars[item[0]]['ovirt_trunk_interface'] }}"
+      networks:
+      - name: "{{ item[1].name }}"
+        boot_protocol: none
+    with_nested:
+    - "{{ groups['ovirt_node'] }}"
+    - "{{ ovirt_networks }}"
+
+  - name: Upload qcow templates
+    tags:
+    - ovirt_template
+    include_role:
+      name: ovirt.ovirt.image_template
+    vars:
+      template_name: "{{ item.template_name }}"
+      qcow_url: "{{ item.qcow_url }}"
+      template_cluster: "{{ item.template_cluster }}"
+      template_memory: "{{ item.template_memory }}"
+      template_cpu: "{{ item.template_cpu }}"
+      template_disk_size: "{{ item.template_disk_size }}"
+      template_disk_storage: "{{ item.template_disk_storage }}"
+      template_nics: []
+    loop: "{{ ovirt_templates }}"
+
+  - name: Always revoke the SSO token
+    tags:
+    - always
+    ovirt_auth:
+      state: absent
+      ovirt_auth: "{{ ovirt_auth }}"
+
+
+# Monitoring stuff
+- name: Configure oVirt Engine
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_engine
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Install Prometheus ovirt installer
+    tags:
+    - monitoring
+    - prometheus
+    import_role:
+      name: ansible-ovirt-exporter
+    vars:
+      ovirt_exporter_scrape_uri: 'https://{{ ansible_fqdn }}/ovirt-engine/api/'
+      ovirt_exporter_ssl_verify: true
+      ovirt_exporter_user: 'admin@internal'
+      ovirt_exporter_password: '{{ vault_ovirt_admin_pass }}'
+      ovirt_exporter_password_file: /usr/local/etc/ovirt_pass
+
+- name: Open firewall port
+  tags:
+  - monitoring
+  - prometheus
+  firewalld:
+    port: 9325/tcp
+    immediate: yes
+    permanent: yes
+    state: enabled
+
+
+- name: Update sssd config
+  remote_user: svc-ansible
+  become: true
+  hosts: ovirt_node
+  tasks:
+  - name: Update sssd dynamic DNS interface
+    replace:
+      path: /etc/sssd/sssd.conf
+      regexp: '^dyndns_iface'
+      replace: 'dyndns_iface = ovirtmgmt'
+    register: sssd_conf
+
+  - name: Restart sssd
+    service:
+      name: sssd
+      state: restarted
+    when: sssd_conf.changed

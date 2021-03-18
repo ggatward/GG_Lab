@@ -1,0 +1,52 @@
+---
+motd_role: KVM Host
+cis_level_1_exclusions: ['1.2.3','1.3.1','1.8','2.2.2','2.2.7','3.4.1','3.4.2','3.4.3','3.4.4','3.4.5','5.2.4','5.2.8','5.3.2']
+# 2.2.2 - X11 required for virt-manager
+# 5.2.4 - X11 Forwarding enabled for virt-manager
+ipaclient_ssl_create_certs: true
+
+kvm_users:
+- geoff
+kvm_imgvol: /dev/sdb
+kvm_trunk_iface: enp4s0
+kvm_vlans: ['3','4']
+kvm_virtual_networks:
+- name: Lab_VLAN3
+  mode: bridge
+  bridge_name: vmbr3
+  autostart: true
+  state: active
+- name: Lab_VLAN4
+  mode: bridge
+  bridge_name: vmbr4
+  autostart: true
+  state: active
+
+kvm_config_storage_pools: true
+kvm_storage_pools:
+- name: ISO
+  path: /data
+  autostart: true
+  state: active
+
+kvm_manage_vms: true
+kvm_vms:
+- name: ovirt-engine
+  autostart: true
+  # Define boot devices in order of preference
+  boot_devices:
+  - network
+  - hd
+  graphics: true
+  # Define disks in MB
+  disks:
+  - disk_driver: scsi
+    name: ovirt-engine.1
+    size: 81920
+  memory: 12288
+  network_interfaces:
+  - source: Lab_VLAN4
+    network_driver: virtio
+    type: network
+  state: running
+  vcpu: 4

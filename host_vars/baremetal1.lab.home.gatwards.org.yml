@@ -1,0 +1,4 @@
+---
+ovirt_mgmt_ip: 172.22.4.11
+ovirt_migration_ip: 192.168.99.11
+ovirt_power_mgmt_address: 172.22.4.3

@@ -1,0 +1,14 @@
+
+deploy:
+- eth0   - API  - VLAN3
+
+control-1:
+- eth0   - API  - VLAN3
+- eth1   - TEN  - VLAN5
+- eth2   - NEU  - VLAN6
+- eth3   - EXT  - VLAN4
+
+compute-1:
+- eth0   - API  - VLAN3
+- eth1   - TEN  - VLAN5
+- eth2   - NEU  - VLAN6

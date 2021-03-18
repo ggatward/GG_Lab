@@ -1,0 +1,33 @@
+
+
+openstack domain create IPA --description 'FreeIPA'
+
+# Get objects from LDAP:
+openstack user list --domain IPA
+openstack group list --domain IPA
+
+
+# Create projects and per-project admin roles
+openstack project create --domain IPA --description 'Test project 1' project1
+openstack role create project1_admin
+openstack project create --domain IPA --description 'Test project 2' project2
+openstack role create project2_admin
+openstack project create --domain IPA --description 'Test project 3' project3
+openstack role create project3_admin
+
+
+# Link IPA groups to projects and roles
+openstack role add --group openstack_admins --group-domain IPA --project admin admin
+openstack role add --group openstack_project1 --group-domain IPA --project project1 project1_admin #--project-domain IPA
+openstack role add --group openstack_project2 --group-domain IPA --project project2 project2_admin #--project-domain IPA
+openstack role add --group openstack_project3 --group-domain IPA --project project3 project3_admin #--project-domain IPA
+
+# Upload images
+openstack image create --disk-format qcow2 --container-format bare --public --file /root/CentOS-7-x86_64-GenericCloud-2009.qcow2 centos7
+
+
+# Create flavors
+openstack flavor create --ram 4096 --vcpus 2 --disk 10 --public m1.small
+
+
+# Create shared networks
