@@ -23,7 +23,7 @@ ovirt_networks:
 - name: VLAN3
   vlan: 3
   mtu: 9000
-- name: Lab
+- name: LAB_EXTERNAL
   vlan: 4
   mtu: 9000
 - name: VLAN5

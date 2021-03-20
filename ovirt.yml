@@ -209,6 +209,7 @@
       # - kvm-intel.nested=1
       # - intel_iommu=on
       power_management_enabled: "{{ hostvars[groups['ovirt_node'][0]]['ovirt_power_management'] | default(false) }}"
+    ignore_errors: true
 
   # Datastores need a host so needs to be created AFTER the first host
   - name: Configure VMstore datastore
@@ -241,6 +242,7 @@
       # - intel_iommu=on
       power_management_enabled: "{{ hostvars[item]['ovirt_power_management'] | default(false) }}"
     loop: "{{ groups['ovirt_node'] }}"
+    ignore_errors: true
 
   - name: Configure host power management
     tags:
@@ -288,6 +290,22 @@
         migration: true
         required: true
       name: migration
+      mtu: 9000
+      vm_network: true
+
+  - name: Configure Neutron network
+    tags:
+    - ovirt_network
+    ovirt_network:
+      auth: "{{ ovirt_auth }}"
+      data_center: "{{ ovirt_datacenter_name }}"
+      clusters:
+      - name: "{{ ovirt_cluster_name }}"
+        assigned: true
+        display: false
+        migration: false
+        required: true
+      name: NEUTRON
       mtu: 9000
       vm_network: true
 
@@ -340,6 +358,18 @@
         address: "{{ hostvars[item]['ovirt_migration_ip'] }}"
         netmask: "{{ hostvars[item]['ovirt_migration_netmask'] }}"
         version: v4
+    loop: "{{ groups['ovirt_node'] }}"
+
+  - name: Configure Neutron interface
+    tags:
+    - ovirt_network
+    ovirt_host_network:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ hostvars[item]['inventory_hostname'] }}"
+      interface: "{{ hostvars[item]['ovirt_neutron_interface'] }}"
+      networks:
+      - name: NEUTRON
+        boot_protocol: none
     loop: "{{ groups['ovirt_node'] }}"
 
   - name: Configure trunk interface
@@ -401,15 +431,15 @@
       ovirt_exporter_password: '{{ vault_ovirt_admin_pass }}'
       ovirt_exporter_password_file: /usr/local/etc/ovirt_pass
 
-- name: Open firewall port
-  tags:
-  - monitoring
-  - prometheus
-  firewalld:
-    port: 9325/tcp
-    immediate: yes
-    permanent: yes
-    state: enabled
+  - name: Open firewall port
+    tags:
+    - monitoring
+    - prometheus
+    firewalld:
+      port: 9325/tcp
+      immediate: yes
+      permanent: yes
+      state: enabled
 
 
 - name: Update sssd config

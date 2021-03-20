@@ -7,7 +7,6 @@ keyboard us
 skipx
 
 network --device=0c:c4:7a:a9:1f:08 --bootproto static --noipv6 --ip=172.22.4.11 --netmask=255.255.255.0 --gateway=172.22.4.1 --nameserver=172.22.1.3,172.22.1.5 --mtu=9000
-network --device=b4:96:91:09:96:c5 --bootproto static --noipv6 --ip=192.168.100.11 --netmask=255.255.255.0 --mtu=9000
 network --hostname baremetal1.lab.home.gatwards.org
 
 rootpw --iscrypted $6$1aFgyHgQfesAR4Jj$6R2B8AujvAGO/qIQUyX3JgrWCfUowzwyLIY9AM4SMoH.z2VTasva3Z77eku4uxE9ylfT7FqbH7H9iVfMomdg7.
@@ -80,49 +79,24 @@ cp -va /etc/resolv.conf /mnt/sysimage/etc/resolv.conf
 %end
 
 %post
-logger "Starting anaconda baremetal2.lab.home.gatwards.org postinstall"
+logger "Starting anaconda baremetal1.lab.home.gatwards.org postinstall"
 exec < /dev/tty3 > /dev/tty3
 #changing to VT 3 so that we can see whats going on....
 /usr/bin/chvt 3
 (
 
-#cat << EOF > /etc/sysconfig/network-scripts/ifcfg-eno1
-#BOOTPROTO="none"
-#IPADDR="172.22.4.11"
-#NETMASK="255.255.255.0"
-#GATEWAY="172.22.4.1"
-#DOMAIN="lab.home.gatwards.org"
-#DEVICE=eno1
-#HWADDR="0c:c4:7a:a9:1f:08"
-#ONBOOT=yes
-#PEERDNS=yes
-#PEERROUTES=yes
-#DEFROUTE=yes
-#DNS1="172.22.1.3"
-#DNS2="172.22.1.5"
-#MTU=9000
-#EOF
-
-# Copy root SSH key for bootstrap
-#mkdir -p /root/.ssh && chmod 700 /root/.ssh
-#cat << EOF > /root/.ssh/authorized_keys
-#ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCu4S8wzEwXIVuHD+KK7y08lravhF5BvApvXRAPXXeaHtQ3HeYN+7t9HpyIQYg6OwsxNX7WbKgZ50Ok12t3EPRbEr8M9wWW+S5l0SJlzv7h26uNcIucFvlo5aPmV+XLFY7qokaKPaMEwrb7wG/gBTfsjLbhFNFXfT1bEMEp87/K6LUwoNQ3dBrZq5UWYuvMMW4kMH1igKB9dCWraHGqzlyJh4ol9XApPaDfJ8ujSiNs7NzZhUFeYpGC/eMAwnuhFWUZf/SJJJ53Y6AmPTBZVmpPbaJSNnakWssAG54t6Ay3orVi+cvvQlIB2oyilxE06i7FXgZSouwtJAk0Q2E/4mfj root@localhost.localdomain
-#EOF
-#chmod 600 /root/.ssh/authorized_keys
-#restorecon -Rv /root
-
 # Copy Ansible SSH key
-useradd svc-ansible
-cat << EOF > /etc/sudoers.d/svc-ansible
-svc-ansible	ALL = (ALL)	NOPASSWD : ALL
-Defaults: svc-ansible !requiretty
+useradd ansible
+cat << EOF > /etc/sudoers.d/ansible
+ansible	ALL = (ALL)	NOPASSWD : ALL
+Defaults: ansible !requiretty
 EOF
-mkdir /home/svc-ansible/.ssh && chmod 700 /home/svc-ansible/.ssh
-cat << EOF > /home/svc-ansible/.ssh/authorized_keys
+mkdir /home/ansible/.ssh && chmod 700 /home/ansible/.ssh
+cat << EOF > /home/ansible/.ssh/authorized_keys
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC75ApOJW1sf360AYmh9B57suv+etPYYa6CzvEJjCVZyU+8xPaZR5EacToq9HPYILNAv3TQk1r+K6DKA5+wEpJqm2YzgIPLkZOP1N4Bw19DnAiqIMnDTYa8iIYHOQMpqG/DY6q1/QnP2Gw6r0uTw7zFKH1Vw4DbVJMGOQBJblWFq1G+LSN4j60eiN72kZEMf3fQgLCKUzDdbOUkjJnl/4/SUq5lncMBm88efiJLNwdJzelGkH5QveNioiQ/mXP/DlnLYiCKHh1qJlaD/OGlEuHJSnDD9uD4TknEi8AFqLTDc4XZZgUWF5RWSUwxMIiBuyMtr5Zma20dQpdwqYZT6LcNcMokHHAQ+S/cuibtR/YQ3PsYubUIAbCfeIHjKRdBDUP5ZE/VfybKTE/rlAUQCzpt5w5iBWr3qo2iW7gW/Rvlt78bqCHETnCNHLIT5mm9koA0+kr2dNmiUnb91KpdpNs4tLveVYGtN8tJHL4NDSHqiEeOYklV+uLL2gN6kziB53c= svc-ansible@ansible.core.home.gatwards.org
 EOF
-chown -R svc-ansible: /home/svc-ansible/.ssh
-chmod 600 /home/svc-ansible/.ssh/authorized_keys
+chown -R ansible: /home/ansible/.ssh
+chmod 600 /home/ansible/.ssh/authorized_keys
 restorecon -Rv /home
 
 sync

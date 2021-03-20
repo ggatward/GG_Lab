@@ -9,6 +9,7 @@ ovirt_mgmt_netmask: 255.255.255.0
 ovirt_mgmt_gateway: 172.22.4.1
 ovirt_migration_interface: eno2
 ovirt_migration_netmask: 255.255.255.0
+ovirt_neutron_interface: ens5f0
 ovirt_trunk_interface: ens5f1
 
 # Power management (fencing) parameters
