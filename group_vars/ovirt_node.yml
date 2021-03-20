@@ -4,13 +4,13 @@ cis_level_1_exclusions: ['1.2.3','1.3.1','1.8','2.2.2','2.2.7','3.4.1','3.4.2','
 # 2.2.2 - Bug in hardening - X11 not present
 
 # Common oVirt network parameters
-ovirt_mgmt_interface: eno1
+ovirt_mgmt_interface: eth4
 ovirt_mgmt_netmask: 255.255.255.0
 ovirt_mgmt_gateway: 172.22.4.1
-ovirt_migration_interface: eno2
+ovirt_migration_interface: eth5
 ovirt_migration_netmask: 255.255.255.0
-ovirt_neutron_interface: ens5f0
-ovirt_trunk_interface: ens5f1
+ovirt_neutron_interface: eth0
+ovirt_trunk_interface: eth1
 
 # Power management (fencing) parameters
 ovirt_power_mgmt: true
