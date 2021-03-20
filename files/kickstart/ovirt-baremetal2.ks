@@ -15,7 +15,7 @@ firewall --service=ssh
 authselect --useshadow --passalgo=sha512 --kickstart
 timezone --utc UTC
 
-bootloader --location=mbr --append="nofb quiet splash=quiet"
+bootloader --location=mbr --append="net.ifnames=0 intel_iommu=on kvm-intel.nested=1 nofb quiet splash=quiet"
 
 %include /tmp/diskpart.cfg
 

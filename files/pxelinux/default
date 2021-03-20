@@ -60,10 +60,10 @@ LABEL oVirt Engine (CentOS 8)
 
 LABEL oVirt Hypervisor (baremetal1)
   KERNEL boot/centos-8-3-vmlinuz
-  APPEND initrd=boot/centos-8-3-initrd.img repo=http://mirror.centos.org/centos/8.3.2011/BaseOS/x86_64/os ks=http://webshare.lab.home.gatwards.org/ks/ovirt-baremetal1.ks
+  APPEND initrd=boot/centos-8-3-initrd.img net.ifnames=0 intel_iommu=on kvm-intel.nested=1 repo=http://mirror.centos.org/centos/8.3.2011/BaseOS/x86_64/os ks=http://webshare.lab.home.gatwards.org/ks/ovirt-baremetal1.ks
 
 LABEL oVirt Hypervisor (baremetal2)
   KERNEL boot/centos-8-3-vmlinuz
-  APPEND initrd=boot/centos-8-3-initrd.img repo=http://mirror.centos.org/centos/8.3.2011/BaseOS/x86_64/os ks=http://webshare.lab.home.gatwards.org/ks/ovirt-baremetal2.ks
+  APPEND initrd=boot/centos-8-3-initrd.img net.ifnames=0 intel_iommu=on kvm-intel.nested=1 repo=http://mirror.centos.org/centos/8.3.2011/BaseOS/x86_64/os ks=http://webshare.lab.home.gatwards.org/ks/ovirt-baremetal2.ks
 
 MENU END
