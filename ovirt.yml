@@ -1,6 +1,6 @@
 ---
 - name: Prepare oVirt Engine
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: ovirt
   tasks:
@@ -15,7 +15,7 @@
 
 
 - name: Prepare oVirt Engine
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: ovirt_engine
   tasks:
@@ -44,7 +44,7 @@
 
 
 - name: Install oVirt Engine
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: ovirt_engine
   collections:
@@ -106,7 +106,7 @@
 
 
 - name: Configure oVirt Engine
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: ovirt_engine
   collections:
@@ -412,7 +412,7 @@
 
 # Monitoring stuff
 - name: Configure oVirt Engine
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: ovirt_engine
   vars_files:
@@ -443,7 +443,7 @@
 
 
 - name: Update sssd config
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: ovirt_node
   tasks:

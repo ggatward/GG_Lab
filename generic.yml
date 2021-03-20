@@ -1,6 +1,6 @@
 ---
 - name: Generic Infrastructure
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   # hosts: "{{ hostlist }},!docker,!containers"
   hosts: all
@@ -38,7 +38,7 @@
 ####################################################################
 
 - name: Authentication
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   # hosts: "{{ hostlist }},!docker,!containers"
   hosts: all
@@ -85,7 +85,7 @@
 # ####################################################################
 
 - name: Monitoring
-  remote_user: svc-ansible
+  remote_user: ansible
   # hosts: "{{ hostlist }},!docker,!containers"
   hosts: all
   become: true

@@ -1,6 +1,6 @@
 ---
 - name: Setup KVM Host
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: kvmhost
   tasks:
@@ -46,7 +46,7 @@
 
 
 - name: Configure KVM
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: kvmhost
   tasks:

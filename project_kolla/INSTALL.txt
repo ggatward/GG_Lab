@@ -2,14 +2,14 @@
 
 
 # Deploy oVirt VMs
-ansible-playbook -i hosts_lab.ini -u svc-ansible --vault-id vault@prompt kolla_provision_ovirt.yml
+ansible-playbook -i hosts_lab.ini -u ansible --vault-id vault@prompt kolla_provision_ovirt.yml
 
 # Apply generic config and hardening
-ansible-playbook -i hosts_lab.ini -u svc-ansible --vault-id vault@prompt --limit kolla generic.yml
-ansible-playbook -i hosts_lab.ini -u svc-ansible --vault-id vault@prompt --limit kolla hardening.yml
+ansible-playbook -i hosts_lab.ini -u ansible --vault-id vault@prompt --limit kolla generic.yml
+ansible-playbook -i hosts_lab.ini -u ansible --vault-id vault@prompt --limit kolla hardening.yml
 
 # Prep deploy host for kolla - initial run will need the extra_vars to do the swift setup
-ansible-playbook -i hosts_lab.ini -u svc-ansible --vault-id vault@prompt kolla_prep_hosts.yml \
+ansible-playbook -i hosts_lab.ini -u ansible --vault-id vault@prompt kolla_prep_hosts.yml \
   -e 'swift_newrings=true' -e 'swift_formatdisks=true'
 
 

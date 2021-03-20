@@ -1,6 +1,6 @@
 ---
 - name: Deploy oVirt VMs for kolla
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: ovirt_engine
   collections:

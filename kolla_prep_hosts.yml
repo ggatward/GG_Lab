@@ -1,6 +1,6 @@
 ---
 - name: Deploy SSH keys from deploy host
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: kolla
   vars_files:
@@ -33,7 +33,7 @@
 
 
 - name: Prepare kolla hosts
-  remote_user: svc-ansible
+  remote_user: ansible
   become: true
   hosts: kolla_control
   vars_files:

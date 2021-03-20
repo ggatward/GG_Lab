@@ -9,7 +9,7 @@ ovirt_vms:
     host_name: control-1.osp.home.gatwards.org
     dns_servers: "{{ generic_dns_servers | join(' ') }}"
     dns_search: osp.home.gatwards.org
-    user_name: svc-ansible
+    user_name: ansible
     root_password: "{{ vault_vm_root_password }}"
     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
   cloud_init_nics:
@@ -76,7 +76,7 @@ ovirt_vms:
     host_name: compute-1.osp.home.gatwards.org
     dns_servers: "{{ generic_dns_servers | join(' ') }}"
     dns_search: osp.home.gatwards.org
-    user_name: svc-ansible
+    user_name: ansible
     root_password: "{{ vault_vm_root_password }}"
     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
   cloud_init_nics:
@@ -125,7 +125,7 @@ ovirt_vms:
     host_name: control-2.osp.home.gatwards.org
     dns_servers: "{{ generic_dns_servers | join(' ') }}"
     dns_search: osp.home.gatwards.org
-    user_name: svc-ansible
+    user_name: ansible
     root_password: "{{ vault_vm_root_password }}"
     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
   cloud_init_nics:
@@ -192,7 +192,7 @@ ovirt_vms:
     host_name: compute-2.osp.home.gatwards.org
     dns_servers: "{{ generic_dns_servers | join(' ') }}"
     dns_search: osp.home.gatwards.org
-    user_name: svc-ansible
+    user_name: ansible
     root_password: "{{ vault_vm_root_password }}"
     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
   cloud_init_nics:

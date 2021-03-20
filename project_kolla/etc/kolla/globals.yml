@@ -98,7 +98,8 @@ cluster_interface: "eth0"
 tunnel_interface: "eth1"
 dns_interface: "eth0"
 enable_neutron_provider_networks: "yes"
-neutron_type_drivers: "flat, vlan, vxlan"
+#neutron_type_drivers: "flat, vlan, vxlan"
+neutron_type_drivers: "flat, vxlan"
 #neutron_dnsmasq_dns_servers: "8.8.8.8,8.8.4.4"
 
 # This is the raw interface given to neutron as its external network port. Even
