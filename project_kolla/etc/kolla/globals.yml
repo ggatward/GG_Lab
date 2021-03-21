@@ -5,6 +5,11 @@
 # commented parameters are shown here, To override the default value uncomment
 # the parameter and change its value.
 
+
+# Local custom overrides
+set_sysctl: no
+create_kolla_user: False
+
 ###############
 # Kolla options
 ###############
