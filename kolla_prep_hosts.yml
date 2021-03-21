@@ -32,10 +32,10 @@
     - docker
 
 
-- name: Prepare kolla hosts
+- name: Prepare kolla deploy host
   remote_user: ansible
   become: true
-  hosts: kolla_control
+  hosts: control-1.osp.home.gatwards.org
   vars_files:
   - vault.yml
   tasks:
@@ -126,9 +126,13 @@
 
 
 #   Kolla Mods
-# - /opt/venv/kolla/share/kolla-ansible/ansible/roles/prechecks/tasks/service_checks.yml
-#     Had to comment out the block in that deals with docker version check
-
+#     Had to remove the block in that deals with docker version check
+  - name: Remove docker version check from kolla
+    replace:
+      path: /opt/venv/kolla/share/kolla-ansible/ansible/roles/prechecks/tasks/service_checks.yml
+      regexp: '^- name: Checking Docker version[^#]+'
+      replace: ''
+      backup: yes
 
 
   ####################

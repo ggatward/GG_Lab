@@ -2,16 +2,19 @@
 # additional groups are for more control of the environment.
 [control]
 172.22.3.21     ansible_become=true
+172.22.3.22     ansible_become=true
 
 [network]
 172.22.3.21     ansible_become=true
+172.22.3.22     ansible_become=true
 
 [compute]
-#172.22.3.21     ansible_become=true
 172.22.3.31     ansible_become=true
+172.22.3.32     ansible_become=true
 
 [storage]
 172.22.3.21     ansible_become=true
+172.22.3.22     ansible_become=true
 
 [monitoring]
 #172.22.3.11     ansible_become=true

@@ -293,7 +293,23 @@
       mtu: 9000
       vm_network: true
 
-  - name: Configure Neutron network
+  # - name: Configure Neutron network
+  #   tags:
+  #   - ovirt_network
+  #   ovirt_network:
+  #     auth: "{{ ovirt_auth }}"
+  #     data_center: "{{ ovirt_datacenter_name }}"
+  #     clusters:
+  #     - name: "{{ ovirt_cluster_name }}"
+  #       assigned: true
+  #       display: false
+  #       migration: false
+  #       required: true
+  #     name: NEUTRON
+  #     mtu: 9000
+  #     vm_network: true
+
+  - name: Configure Trunk passthrough
     tags:
     - ovirt_network
     ovirt_network:
@@ -305,7 +321,7 @@
         display: false
         migration: false
         required: true
-      name: NEUTRON
+      name: TRUNK
       mtu: 9000
       vm_network: true
 
@@ -360,19 +376,31 @@
         version: v4
     loop: "{{ groups['ovirt_node'] }}"
 
-  - name: Configure Neutron interface
+  # - name: Configure Neutron interface
+  #   tags:
+  #   - ovirt_network
+  #   ovirt_host_network:
+  #     auth: "{{ ovirt_auth }}"
+  #     name: "{{ hostvars[item]['inventory_hostname'] }}"
+  #     interface: "{{ hostvars[item]['ovirt_neutron_interface'] }}"
+  #     networks:
+  #     - name: NEUTRON
+  #       boot_protocol: none
+  #   loop: "{{ groups['ovirt_node'] }}"
+
+  - name: Configure Trunk Passthrough interface
     tags:
     - ovirt_network
     ovirt_host_network:
       auth: "{{ ovirt_auth }}"
       name: "{{ hostvars[item]['inventory_hostname'] }}"
-      interface: "{{ hostvars[item]['ovirt_neutron_interface'] }}"
+      interface: "{{ hostvars[item]['ovirt_trunk_interface'] }}"
       networks:
-      - name: NEUTRON
+      - name: TRUNK
         boot_protocol: none
     loop: "{{ groups['ovirt_node'] }}"
 
-  - name: Configure trunk interface
+  - name: Configure VLAN interfaces
     tags:
     - ovirt_network
     ovirt_host_network:

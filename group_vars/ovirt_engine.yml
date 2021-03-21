@@ -32,6 +32,9 @@ ovirt_networks:
 - name: VLAN6
   vlan: 6
   mtu: 9000
+- name: NEUTRON
+  vlan: 902
+  mtu: 9000
 
 ovirt_templates:
 - template_name: CentOS-7-x86_64-GenericCloud-2009

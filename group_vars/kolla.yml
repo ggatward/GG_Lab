@@ -21,7 +21,7 @@ ovirt_vms:
     nic_on_boot: true
   - nic_name: eth1
     nic_boot_protocol: static
-    nic_ip_address: 172.22.5.21
+    nic_ip_address: 10.10.20.21
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   - nic_name: eth2
@@ -58,7 +58,7 @@ ovirt_vms:
   - name: eth0
     network: VLAN3
   - name: eth1
-    network: VLAN5
+    network: TRUNK
   - name: eth2
     network: NEUTRON
   - name: eth3
@@ -88,7 +88,7 @@ ovirt_vms:
     nic_on_boot: true
   - nic_name: eth1
     nic_boot_protocol: static
-    nic_ip_address: 172.22.5.31
+    nic_ip_address: 10.10.20.31
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   - nic_name: eth2
@@ -108,7 +108,7 @@ ovirt_vms:
   - name: eth0
     network: VLAN3
   - name: eth1
-    network: VLAN5
+    network: TRUNK
   - name: eth2
     network: NEUTRON
   state: running
@@ -137,7 +137,7 @@ ovirt_vms:
     nic_on_boot: true
   - nic_name: eth1
     nic_boot_protocol: static
-    nic_ip_address: 172.22.5.22
+    nic_ip_address: 10.10.20.22
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   - nic_name: eth2
@@ -174,7 +174,7 @@ ovirt_vms:
   - name: eth0
     network: VLAN3
   - name: eth1
-    network: VLAN5
+    network: TRUNK
   - name: eth2
     network: NEUTRON
   - name: eth3
@@ -204,7 +204,7 @@ ovirt_vms:
     nic_on_boot: true
   - nic_name: eth1
     nic_boot_protocol: static
-    nic_ip_address: 172.22.5.32
+    nic_ip_address: 10.10.20.32
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   - nic_name: eth2
@@ -224,7 +224,7 @@ ovirt_vms:
   - name: eth0
     network: VLAN3
   - name: eth1
-    network: VLAN5
+    network: TRUNK
   - name: eth2
     network: NEUTRON
   state: running
