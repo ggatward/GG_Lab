@@ -1,8 +1,20 @@
+# Create aggregates for compute AZ
+openstack aggregate create aza
+openstack aggregate create azb
+
+# Associate aggregates with AZ
+openstack aggregate set --zone aza aza
+openstack aggregate set --zone azb azb
+
+# Add hosts to the aggregates
+openstack aggregate add host aza compute-1.osp.home.gatwards.org
+openstack aggregate add host azb compute-2.osp.home.gatwards.org
 
 
+# Create horizon auth domain
 openstack domain create IPA --description 'FreeIPA'
 
-# Get objects from LDAP:
+# Get objects from LDAP to populate cache:
 openstack user list --domain IPA
 openstack group list --domain IPA
 
