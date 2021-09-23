@@ -1,12 +1,80 @@
 ---
 ovirt_vms:
-- name: control-1
+# - name: control-1
+#   template: CentOS-7-x86_64-GenericCloud-2009
+#   memory: 12GiB
+#   cpu_cores: 4
+#   #clone: true
+#   cloud_init:
+#     host_name: control-1.osp.home.gatwards.org
+#     dns_servers: "{{ generic_dns_servers | join(' ') }}"
+#     dns_search: osp.home.gatwards.org
+#     user_name: ansible
+#     root_password: "{{ vault_vm_root_password }}"
+#     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
+#   cloud_init_nics:
+#   - nic_name: eth0
+#     nic_boot_protocol: static
+#     nic_ip_address: 172.22.3.21
+#     nic_netmask: 255.255.255.0
+#     nic_gateway: 172.22.3.1
+#     nic_on_boot: true
+#   - nic_name: eth1
+#     nic_boot_protocol: static
+#     nic_ip_address: 10.10.20.21
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   - nic_name: eth2
+#     nic_boot_protocol: static
+#     nic_ip_address: 10.10.10.21
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   - nic_name: eth3
+#     nic_boot_protocol: static
+#     nic_ip_address: 172.22.4.21
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   cluster: "{{ ovirt_cluster_name }}"
+#   data_center: "{{ ovirt_datacenter_name }}"
+#   disks:
+#   - size: 80GiB
+#     name: CentOS-7-x86_64-GenericCloud-2009
+#     interface: virtio_scsi
+#     name_prefix: false
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-1
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-2
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-3
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   nics:
+#   - name: eth0
+#     network: VLAN3
+#   - name: eth1
+#     network: TRUNK
+#   - name: eth2
+#     network: NEUTRON
+#   - name: eth3
+#     network: LAB_EXTERNAL
+#   state: running
+#   tag:
+#     - kolla
+#     - openstack
+
+- name: network-3
   template: CentOS-7-x86_64-GenericCloud-2009
   memory: 12GiB
   cpu_cores: 4
   #clone: true
   cloud_init:
-    host_name: control-1.osp.home.gatwards.org
+    host_name: network-3.osp.home.gatwards.org
     dns_servers: "{{ generic_dns_servers | join(' ') }}"
     dns_search: osp.home.gatwards.org
     user_name: ansible
@@ -15,85 +83,23 @@ ovirt_vms:
   cloud_init_nics:
   - nic_name: eth0
     nic_boot_protocol: static
-    nic_ip_address: 172.22.3.21
+    nic_ip_address: 172.22.3.24
     nic_netmask: 255.255.255.0
     nic_gateway: 172.22.3.1
     nic_on_boot: true
   - nic_name: eth1
     nic_boot_protocol: static
-    nic_ip_address: 10.10.20.21
+    nic_ip_address: 10.10.20.24
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   - nic_name: eth2
     nic_boot_protocol: static
-    nic_ip_address: 10.10.10.21
+    nic_ip_address: 10.10.10.24
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   - nic_name: eth3
     nic_boot_protocol: static
-    nic_ip_address: 172.22.4.21
-    nic_netmask: 255.255.255.0
-    nic_on_boot: true
-  cluster: "{{ ovirt_cluster_name }}"
-  data_center: "{{ ovirt_datacenter_name }}"
-  disks:
-  - size: 120GiB
-    name: CentOS-7-x86_64-GenericCloud-2009
-    interface: virtio_scsi
-    name_prefix: false
-    storage_domain: VMstore1
-  - size: 10GiB
-    name: swift-1
-    interface: virtio_scsi
-    storage_domain: VMstore1
-  - size: 10GiB
-    name: swift-2
-    interface: virtio_scsi
-    storage_domain: VMstore1
-  - size: 10GiB
-    name: swift-3
-    interface: virtio_scsi
-    storage_domain: VMstore1
-  nics:
-  - name: eth0
-    network: VLAN3
-  - name: eth1
-    network: TRUNK
-  - name: eth2
-    network: NEUTRON
-  - name: eth3
-    network: LAB_EXTERNAL
-  state: running
-  tag:
-    - kolla
-    - openstack
-- name: compute-1
-  template: CentOS-7-x86_64-GenericCloud-2009
-  memory: 8GiB
-  cpu_cores: 4
-  #clone: true
-  cloud_init:
-    host_name: compute-1.osp.home.gatwards.org
-    dns_servers: "{{ generic_dns_servers | join(' ') }}"
-    dns_search: osp.home.gatwards.org
-    user_name: ansible
-    root_password: "{{ vault_vm_root_password }}"
-    authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
-  cloud_init_nics:
-  - nic_name: eth0
-    nic_boot_protocol: static
-    nic_ip_address: 172.22.3.31
-    nic_netmask: 255.255.255.0
-    nic_gateway: 172.22.3.1
-    nic_on_boot: true
-  - nic_name: eth1
-    nic_boot_protocol: static
-    nic_ip_address: 10.10.20.31
-    nic_netmask: 255.255.255.0
-    nic_on_boot: true
-  - nic_name: eth2
-    nic_boot_protocol: static
-    nic_ip_address: 10.10.10.31
+    nic_ip_address: 172.22.4.24
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   cluster: "{{ ovirt_cluster_name }}"
@@ -111,18 +117,184 @@ ovirt_vms:
     network: TRUNK
   - name: eth2
     network: NEUTRON
+  - name: eth3
+    network: LAB_EXTERNAL
   state: running
   tag:
     - kolla
     - openstack
 
-- name: control-2
+# - name: storage-1
+#   template: CentOS-7-x86_64-GenericCloud-2009
+#   memory: 8GiB
+#   cpu_cores: 4
+#   #clone: true
+#   cloud_init:
+#     host_name: storage-1.osp.home.gatwards.org
+#     dns_servers: "{{ generic_dns_servers | join(' ') }}"
+#     dns_search: osp.home.gatwards.org
+#     user_name: ansible
+#     root_password: "{{ vault_vm_root_password }}"
+#     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
+#   cloud_init_nics:
+#   - nic_name: eth0
+#     nic_boot_protocol: static
+#     nic_ip_address: 172.22.3.26
+#     nic_netmask: 255.255.255.0
+#     nic_gateway: 172.22.3.1
+#     nic_on_boot: true
+#   cluster: "{{ ovirt_cluster_name }}"
+#   data_center: "{{ ovirt_datacenter_name }}"
+#   disks:
+#   - size: 80GiB
+#     name: CentOS-7-x86_64-GenericCloud-2009
+#     interface: virtio_scsi
+#     name_prefix: false
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-1
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-2
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-3
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   nics:
+#   - name: eth0
+#     network: VLAN3
+#   state: running
+#   tag:
+#     - kolla
+#     - openstack
+
+# - name: compute-1
+#   template: CentOS-7-x86_64-GenericCloud-2009
+#   memory: 16GiB
+#   cpu_cores: 4
+#   #clone: true
+#   cloud_init:
+#     host_name: compute-1.osp.home.gatwards.org
+#     dns_servers: "{{ generic_dns_servers | join(' ') }}"
+#     dns_search: osp.home.gatwards.org
+#     user_name: ansible
+#     root_password: "{{ vault_vm_root_password }}"
+#     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
+#   cloud_init_nics:
+#   - nic_name: eth0
+#     nic_boot_protocol: static
+#     nic_ip_address: 172.22.3.31
+#     nic_netmask: 255.255.255.0
+#     nic_gateway: 172.22.3.1
+#     nic_on_boot: true
+#   - nic_name: eth1
+#     nic_boot_protocol: static
+#     nic_ip_address: 10.10.20.31
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   - nic_name: eth2
+#     nic_boot_protocol: static
+#     nic_ip_address: 10.10.10.31
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   cluster: "{{ ovirt_cluster_name }}"
+#   data_center: "{{ ovirt_datacenter_name }}"
+#   disks:
+#   - size: 80GiB
+#     name: CentOS-7-x86_64-GenericCloud-2009
+#     interface: virtio_scsi
+#     name_prefix: false
+#     storage_domain: VMstore1
+#   nics:
+#   - name: eth0
+#     network: VLAN3
+#   - name: eth1
+#     network: TRUNK
+#   - name: eth2
+#     network: NEUTRON
+#   state: running
+#   tag:
+#     - kolla
+#     - openstack
+
+# - name: control-2
+#   template: CentOS-7-x86_64-GenericCloud-2009
+#   memory: 12GiB
+#   cpu_cores: 4
+#   #clone: true
+#   cloud_init:
+#     host_name: control-2.osp.home.gatwards.org
+#     dns_servers: "{{ generic_dns_servers | join(' ') }}"
+#     dns_search: osp.home.gatwards.org
+#     user_name: ansible
+#     root_password: "{{ vault_vm_root_password }}"
+#     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
+#   cloud_init_nics:
+#   - nic_name: eth0
+#     nic_boot_protocol: static
+#     nic_ip_address: 172.22.3.22
+#     nic_netmask: 255.255.255.0
+#     nic_gateway: 172.22.3.1
+#     nic_on_boot: true
+#   - nic_name: eth1
+#     nic_boot_protocol: static
+#     nic_ip_address: 10.10.20.22
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   - nic_name: eth2
+#     nic_boot_protocol: static
+#     nic_ip_address: 10.10.10.22
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   - nic_name: eth3
+#     nic_boot_protocol: static
+#     nic_ip_address: 172.22.4.22
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   cluster: "{{ ovirt_cluster_name }}"
+#   data_center: "{{ ovirt_datacenter_name }}"
+#   disks:
+#   - size: 80GiB
+#     name: CentOS-7-x86_64-GenericCloud-2009
+#     interface: virtio_scsi
+#     name_prefix: false
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-1
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-2
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-3
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   nics:
+#   - name: eth0
+#     network: VLAN3
+#   - name: eth1
+#     network: TRUNK
+#   - name: eth2
+#     network: NEUTRON
+#   - name: eth3
+#     network: LAB_EXTERNAL
+#   state: running
+#   tag:
+#     - kolla
+#     - openstack
+
+- name: network-4
   template: CentOS-7-x86_64-GenericCloud-2009
   memory: 12GiB
   cpu_cores: 4
   #clone: true
   cloud_init:
-    host_name: control-2.osp.home.gatwards.org
+    host_name: network-4.osp.home.gatwards.org
     dns_servers: "{{ generic_dns_servers | join(' ') }}"
     dns_search: osp.home.gatwards.org
     user_name: ansible
@@ -131,85 +303,23 @@ ovirt_vms:
   cloud_init_nics:
   - nic_name: eth0
     nic_boot_protocol: static
-    nic_ip_address: 172.22.3.22
+    nic_ip_address: 172.22.3.25
     nic_netmask: 255.255.255.0
     nic_gateway: 172.22.3.1
     nic_on_boot: true
   - nic_name: eth1
     nic_boot_protocol: static
-    nic_ip_address: 10.10.20.22
+    nic_ip_address: 10.10.20.25
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   - nic_name: eth2
     nic_boot_protocol: static
-    nic_ip_address: 10.10.10.22
+    nic_ip_address: 10.10.10.25
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   - nic_name: eth3
     nic_boot_protocol: static
-    nic_ip_address: 172.22.4.22
-    nic_netmask: 255.255.255.0
-    nic_on_boot: true
-  cluster: "{{ ovirt_cluster_name }}"
-  data_center: "{{ ovirt_datacenter_name }}"
-  disks:
-  - size: 120GiB
-    name: CentOS-7-x86_64-GenericCloud-2009
-    interface: virtio_scsi
-    name_prefix: false
-    storage_domain: VMstore1
-  - size: 10GiB
-    name: swift-1
-    interface: virtio_scsi
-    storage_domain: VMstore1
-  - size: 10GiB
-    name: swift-2
-    interface: virtio_scsi
-    storage_domain: VMstore1
-  - size: 10GiB
-    name: swift-3
-    interface: virtio_scsi
-    storage_domain: VMstore1
-  nics:
-  - name: eth0
-    network: VLAN3
-  - name: eth1
-    network: TRUNK
-  - name: eth2
-    network: NEUTRON
-  - name: eth3
-    network: LAB_EXTERNAL
-  state: running
-  tag:
-    - kolla
-    - openstack
-- name: compute-2
-  template: CentOS-7-x86_64-GenericCloud-2009
-  memory: 8GiB
-  cpu_cores: 4
-  #clone: true
-  cloud_init:
-    host_name: compute-2.osp.home.gatwards.org
-    dns_servers: "{{ generic_dns_servers | join(' ') }}"
-    dns_search: osp.home.gatwards.org
-    user_name: ansible
-    root_password: "{{ vault_vm_root_password }}"
-    authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
-  cloud_init_nics:
-  - nic_name: eth0
-    nic_boot_protocol: static
-    nic_ip_address: 172.22.3.32
-    nic_netmask: 255.255.255.0
-    nic_gateway: 172.22.3.1
-    nic_on_boot: true
-  - nic_name: eth1
-    nic_boot_protocol: static
-    nic_ip_address: 10.10.20.32
-    nic_netmask: 255.255.255.0
-    nic_on_boot: true
-  - nic_name: eth2
-    nic_boot_protocol: static
-    nic_ip_address: 10.10.10.32
+    nic_ip_address: 172.22.4.25
     nic_netmask: 255.255.255.0
     nic_on_boot: true
   cluster: "{{ ovirt_cluster_name }}"
@@ -227,9 +337,107 @@ ovirt_vms:
     network: TRUNK
   - name: eth2
     network: NEUTRON
+  - name: eth3
+    network: LAB_EXTERNAL
   state: running
   tag:
     - kolla
     - openstack
+
+# - name: storage-2
+#   template: CentOS-7-x86_64-GenericCloud-2009
+#   memory: 8GiB
+#   cpu_cores: 4
+#   #clone: true
+#   cloud_init:
+#     host_name: storage-2.osp.home.gatwards.org
+#     dns_servers: "{{ generic_dns_servers | join(' ') }}"
+#     dns_search: osp.home.gatwards.org
+#     user_name: ansible
+#     root_password: "{{ vault_vm_root_password }}"
+#     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
+#   cloud_init_nics:
+#   - nic_name: eth0
+#     nic_boot_protocol: static
+#     nic_ip_address: 172.22.3.27
+#     nic_netmask: 255.255.255.0
+#     nic_gateway: 172.22.3.1
+#     nic_on_boot: true
+#   cluster: "{{ ovirt_cluster_name }}"
+#   data_center: "{{ ovirt_datacenter_name }}"
+#   disks:
+#   - size: 80GiB
+#     name: CentOS-7-x86_64-GenericCloud-2009
+#     interface: virtio_scsi
+#     name_prefix: false
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-1
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-2
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   - size: 10GiB
+#     name: swift-3
+#     interface: virtio_scsi
+#     storage_domain: VMstore1
+#   nics:
+#   - name: eth0
+#     network: VLAN3
+#   state: running
+#   tag:
+#     - kolla
+#     - openstack
+
+# - name: compute-2
+#   template: CentOS-7-x86_64-GenericCloud-2009
+#   memory: 16GiB
+#   cpu_cores: 4
+#   #clone: true
+#   cloud_init:
+#     host_name: compute-2.osp.home.gatwards.org
+#     dns_servers: "{{ generic_dns_servers | join(' ') }}"
+#     dns_search: osp.home.gatwards.org
+#     user_name: ansible
+#     root_password: "{{ vault_vm_root_password }}"
+#     authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
+#   cloud_init_nics:
+#   - nic_name: eth0
+#     nic_boot_protocol: static
+#     nic_ip_address: 172.22.3.32
+#     nic_netmask: 255.255.255.0
+#     nic_gateway: 172.22.3.1
+#     nic_on_boot: true
+#   - nic_name: eth1
+#     nic_boot_protocol: static
+#     nic_ip_address: 10.10.20.32
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   - nic_name: eth2
+#     nic_boot_protocol: static
+#     nic_ip_address: 10.10.10.32
+#     nic_netmask: 255.255.255.0
+#     nic_on_boot: true
+#   cluster: "{{ ovirt_cluster_name }}"
+#   data_center: "{{ ovirt_datacenter_name }}"
+#   disks:
+#   - size: 80GiB
+#     name: CentOS-7-x86_64-GenericCloud-2009
+#     interface: virtio_scsi
+#     name_prefix: false
+#     storage_domain: VMstore1
+#   nics:
+#   - name: eth0
+#     network: VLAN3
+#   - name: eth1
+#     network: TRUNK
+#   - name: eth2
+#     network: NEUTRON
+#   state: running
+#   tag:
+#     - kolla
+#     - openstack
 
 firewall_service: iptables

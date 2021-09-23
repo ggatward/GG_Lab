@@ -37,10 +37,10 @@ systemctl restart NetworkManager
 # Create CentOS8 'services' VM
  - KVM Networking:
     - LAB interface (eth0) bridge to VLAN4
-    - OKD interface (eth1) bridge to VLAN5
+    - OCP interface (eth1) bridge to VLAN3
  - Hostname okd4-services.okd.local
- - LAB IP  172.22.4.210
- - OKD IP  172.22.5.210
+ - LAB IP  172.22.4.100
+ - OCP IP  172.22.3.100
 
 dnf -y update
 dnf -y install epel-release git
@@ -48,27 +48,15 @@ dnf -y install epel-release git
 # Clone okd_files dir from repo
 cd okd4_files
 
-# Setup and start DNS
-# ** now in IPA - see ipa_dns_setup.sh
-#dnf -y install bind bind-utils
-#cp named.conf /etc/named.conf
-#cp named.conf.local /etc/named/
-#mkdir /etc/named/zones
-#cp db* /etc/named/zones
-#systemctl enable named
-#systemctl start named
-#firewall-cmd --permanent --add-port=53/udp
-#firewall-cmd --reload
-
-
-
 # Setup and start DHCP and TFTP
 dnf -y install dnsmasq ipxe-bootimgs
-cp dnsmasq.conf /etc/dnsmasq.conf
-cp dnsmasq.service /usr/lib/systemd/system/dnsmasq.service
-cp /usr/share/ipxe/{undionly.kpxe,ipxe.efi,snponly.efi} /tftpboot
-mkdir /tftpboot/menu
-cp pxe_files/boot.ipxe /tftpboot/menu/
+cp okd4_files/dnsmasq.conf /etc/dnsmasq.conf
+cp okd4_files/dnsmasq.service /usr/lib/systemd/system/dnsmasq.service
+mkdir -p /var/lib/tftpboot/menu
+cp /usr/share/ipxe/{undionly.kpxe,ipxe-x86_64.efi} /var/lib/tftpboot
+cp pxe_files/boot.ipxe /var/lib/tftpboot/menu/
+chmod 644 /var/lib/tftpboot/menu/boot.ipxe
+restorecon -Rv /var/lib/tftpboot
 systemctl daemon-reload
 systemctl enable dnsmasq
 systemctl start dnsmasq
@@ -78,7 +66,7 @@ firewall-cmd --reload
 
 # Setup and start HAProxy
 dnf -y install haproxy
-cp haproxy.cfg /etc/haproxy/haproxy.cfg
+cp okd4_files/haproxy.cfg /etc/haproxy/haproxy.cfg
 setsebool -P haproxy_connect_any 1
 systemctl enable haproxy
 systemctl start haproxy
@@ -103,7 +91,7 @@ firewall-cmd --reload
  - KVM Networking:
     - OKD interface (eth0) on VLAN5
 
- - bootstrap.lab.okd.local     (172.22.5.100)
+ - bootstrap.lab.okd.local     (172.22.5.110)
  - master-1       (172.22.5.101)
  - master-2       (172.22.5.102)
  - master-3       (172.22.5.103)

@@ -1,0 +1,4 @@
+---
+# Since we have multiple routable interfaces we need to override this one
+cis_v_3_2_7_ipv4_conf_all_rp_filter: { proc_src: '/proc/sys/net/ipv4/conf/all/rp_filter', kernel_param: 'net.ipv4.conf.all.rp_filter', value: 2 }
+cis_v_3_2_7_ipv4_conf_default_rp_filter: { proc_src: '/proc/sys/net/ipv4/conf/default/rp_filter', kernel_param: 'net.ipv4.conf.default.rp_filter', value: 2 }

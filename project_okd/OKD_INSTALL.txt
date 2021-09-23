@@ -1,26 +1,25 @@
 #############################################################
-# Download OKD installers
-OKD_VERSION="4.6.0-0.okd-2021-02-14-205305"
+# Download OCP installers
 
-wget -O /root/openshift-client-linux-${OKD_VERSION}.tar.gz \
-  https://github.com/openshift/okd/releases/download/${OKD_VERSION}/openshift-client-linux-${OKD_VERSION}.tar.gz
-tar -xvzf openshift-client-linux-${OKD_VERSION}.tar.gz
+wget -O /root/openshift-client-linux.tar.gz \
+  https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
+tar -xvzf openshift-client-linux.tar.gz
 
-wget -O /root/openshift-install-linux-${OKD_VERSION}.tar.gz \
-  https://github.com/openshift/okd/releases/download/${OKD_VERSION}/openshift-install-linux-${OKD_VERSION}.tar.gz
-tar -xvzf openshift-install-linux-${OKD_VERSION}.tar.gz
+wget -O /root/openshift-install-linux.tar.gz \
+  https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-install-linux.tar.gz
+tar -xvzf openshift-install-linux.tar.gz
 
-mv kubectl oc openshift-install /usr/local/bin/
+mv kubectl oc openshift-install /usr/local/sbin/
 
 
 # Download CoreOS boot images for iPXE
-mkdir /var/www/html/okd4
-wget -O /var/www/html/okd4/fedora-coreos-33.20210117.3.2-live-kernel-x86_64 \
-  https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/33.20210117.3.2/x86_64/fedora-coreos-33.20210117.3.2-live-kernel-x86_64
-wget -O /var/www/html/okd4/fedora-coreos-33.20210117.3.2-live-initramfs.x86_64.img \
-  https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/33.20210117.3.2/x86_64/fedora-coreos-33.20210117.3.2-live-rootfs.x86_64.img
-wget -O /var/www/html/okd4/fedora-coreos-33.20210117.3.2-live-rootfs.x86_64.img \
-  https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/33.20210117.3.2/x86_64/fedora-coreos-33.20210117.3.2-live-rootfs.x86_64.img
+mkdir /var/www/html/ocp
+wget -O /var/www/html/ocp/rhcos-live-kernel-x86_64 \
+  https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.8/latest/rhcos-live-kernel-x86_64
+wget -O /var/www/html/ocp/rhcos-live-initramfs.x86_64.img \
+  https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.8/latest/rhcos-live-initramfs.x86_64.img
+wget -O /var/www/html/ocp/rhcos-live-rootfs.x86_64.img \
+  https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.8/latest/rhcos-live-rootfs.x86_64.img
 restorecon -Rv /var/www/html
 
 
@@ -31,13 +30,18 @@ ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa
 # Clean out any existing install artefacts
 rm -rf /root/install_dir
 mkdir /root/install_dir
-cp okd4_files/install-config.yaml ./install_dir
+cp okd4_files/install-config.yaml /root/install_dir
 
+cd /root
 # Edit the install-config.yaml in the install_dir, insert your pull secret and ssh key
-cp ./install_dir/install-config.yaml ./install_dir/install-config.yaml.bak
+cp install_dir/install-config.yaml install_dir/install-config.yaml.bak
 
 # Generate the Kubernetes manifests for the cluster, ignore the warning:
 openshift-install create manifests --dir=install_dir/
+
+# Customise the manifests for chrony etc....
+
+
 
 
 ### NOT FOR 3-NODE CLUSTER ###
@@ -50,7 +54,7 @@ openshift-install create ignition-configs --dir=install_dir/
 ### NOTE - If recreating the configs, ensure install_dir is empty (incl hidden files) before running...
 
 # Copy ignition and CoreOS files to webserver
-cp -R install_dir/* /var/www/html/okd4/
+cp -R install_dir/* /var/www/html/ocp/
 chown -R apache: /var/www/html/
 find /var/www/html/ -type d -exec chmod 755 {} \;
 find /var/www/html/ -type f -exec chmod 644 {} \;

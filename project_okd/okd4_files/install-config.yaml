@@ -1,5 +1,5 @@
 apiVersion: v1
-baseDomain: okd.home.gatwards.org
+baseDomain: ocp.home.gatwards.org
 metadata:
   name: lab
 
@@ -29,4 +29,4 @@ platform:
 fips: false
 
 pullSecret: '{"auths":{"fake":{"auth": "bar"}}}'
-sshKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDCo0seMFNnSgezhW0NfoyeAtJbBL20CzDkvVe0Z7FQUKDYQHieXEoZ2Gr8UXtbkX+AnhKV2JBQzplhhV3J88r016YashuZETh7tGW5dZIFsarhakTMcXuX499YtW5yb3WDUUmGxKBW7jk21Gjum+eKsvVEN2JpmfwbsNbAdh6uSl7Ok+rNgq6TI6Zf9yMpUdIBzkkshJdT1GUhpz8QfAAOFICyiteolLIhMpd/FdtHFCPTxlR1+TmEj9j9pNMx03Pb1NHOYyJGBvL2rp430rLVQ1PWnP3tgm7tf1c6By/OSjrkDS2nL6t036aA1qkT9FeucBcRuwZnrOdf4trHe4yf2hkvr+GDDtIQ3UngC6D8isN1LP2QNe0m65/oQopeSDneBPpANypHLnS5KxQFSOk0klxJ+auO+zVUzD/cdrUBWr11o2LTIh/wkA93E38cr7akEAVGwCCZ2pt36yN4lj70QxxqhWjg2R0KHVNnFzADbepZwgkEqnroAXohgj6FtCE='
+sshKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDUZ2nVg/ZCPS7K1g50sr6uytl9qVy191OM6K6FuRKT5eP2ta161HIZqoxrFzcn3Ib7Xo1zu7du97iicvoQ1HGka9XA2YNYPGiq0RS2nAJsfdIN9/kAvHTh3JWCptfxcaljKScxW3N8LFC8ezgd4Af2D5xhtu0FxD/a1dbzOmryqPup1TH4+vXywf6envJNSjT/jTLZgB+UL8rIAOhr2jCW+ikXz6Y+CSL35vpD6v+WbsedplxVd+3h0FN7KrlMVBTzAxsTAyx5/SdDGd1hwSqB7PjLyNygqtpIWbrGlbEE+Agu//FLluf6gvncn2kHkiVH7M2fkbh/BimE6hkUbG8tRA7/ZCtLLVMPmXVU+7vu+qgqKvY/OSgy/e1IE09bdtDMI+6zQ3G+48dpO61mSvz/QnFZeobyivCEUSyrsxbeBK7gfnpiSh6gclBxGzdCC/RllbU/sEb4RqqlYF4gVOk0nF/TbrXmoX/EH9WeYOHaO3JvpLcjoyVXpsXYwzd88Hk= root@services.ocp.home.gatwards.org'
