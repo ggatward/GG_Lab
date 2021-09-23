@@ -34,6 +34,21 @@
     import_role:
       name: ansible-role-cacerts
 
+  - block:
+    - name: Install firewalld
+      tags:
+      - generic
+      package:
+        name: firewalld
+        state: present
+
+    - name: Start firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    when: firewall_service is not defined or firewall_service != 'iptables'
 
 ####################################################################
 

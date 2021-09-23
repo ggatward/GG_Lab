@@ -1,0 +1,219 @@
+---
+- name: Deploy SSH keys from deploy host
+  remote_user: ansible
+  become: true
+  hosts: ocp_services,ocp_haproxy
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Copy SSH public key
+    copy:
+      content: "{{ vault_ansible_ssh_public_key }}"
+      dest: /root/.ssh/authorized_keys
+      owner: root
+      group: root
+      mode: '0644'
+
+
+- name: Prepare OCP services (helper) host
+  remote_user: ansible
+  become: true
+  hosts: ocp_services
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Install packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    loop:
+    - dnsmasq
+    - ipxe-bootimgs
+    - httpd
+
+  - name: Download OCP tools
+    unarchive:
+      src: "{{ item.src }}"
+      remote_src: true
+      dest: /usr/local/sbin/
+      owner: root
+      group: root
+      mode: '0755'
+      creates: "{{ item.creates }}"
+    loop:
+    - src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-install-linux.tar.gz
+      creates: /usr/local/sbin/openshift-install
+    - src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
+      creates: /usr/local/sbin/oc
+
+#   - name: Copy in dnsmasq files
+#     copy:
+#       src: "{{ item.src }}"
+#       dest: "{{ item.dest }}
+#       owner: root
+#       group: root
+#       mode: '0644'
+#     loop:
+#     - src: project_ocp/ocp_files/dnsmasq.conf
+#       dest: /etc/dnsmasq.conf
+#     - src: project_ocp/ocp_files/dnsmasq.service
+#       dest: /usr/lib/systemd/system/dnsmasq.service
+#     register: dnsmasq
+
+#   - name: Create TFTP directories
+#     file:
+#       path: /var/lib/tftpboot/menu
+#       state: directory
+#       owner: root
+#       group: root
+#       mode: '0755'
+#       recurse: true
+
+#   - name: Copy iPXE bootloaders
+#     copy:
+#       src: "{{ item }}"
+#       remote_src: true
+#       dest: /var/lib/tftpboot/
+#       owner: root
+#       group: root
+#       mode: '0644'
+#       setype: tftpdir_rw_t
+#     loop:
+#     - /usr/share/ipxe/undionly.kpxe
+#     - /usr/share/ipxe/ipxe-x86_64.efi
+
+#   - name: Copy iPXE boot menu
+#     copy:
+#       src: project_ocp/pxe_files/boot.ipxe
+#       dest: /var/lib/tftpboot/menu/boot.ipxe
+#       owner: root
+#       group: root
+#       mode: '0644'
+#       setype: tftpdir_rw_t
+
+#   - name: Open Firewall services
+#     firewalld:
+#       service: "{{ item }}"
+#       immediate: yes
+#       permanent: yes
+#       state: enabled
+#     with_items:
+#     - dhcp
+#     - tftp
+
+#   - name: Restart dnsmasq
+#     service:
+#       name: dnsmasq
+#       state: restarted
+#       enabled: true
+#       daemon_reload: true
+#     when: dnsmasq.changed
+
+#   # HTTPD
+#   - name: Set apache listen port
+#     lineinfile:
+#       path: /etc/httpd/conf/httpd.conf
+#       regexp: '^Listen 80'
+#       line: Listen 8080
+#     register: httpd
+
+#   - name: Allow apache to read our content
+#     seboolean:
+#       name: httpd_read_user_content
+#       state: true
+#       persistent: true
+
+#   - name: Create OCP content directory
+#     file:
+#       path: /var/www/html/ocp
+#       state: directory
+#       owner: apache
+#       group: apache
+#       mode: '0755'
+#       setype: httpd_sys_content_t
+
+#   - name: Download CoreOS images
+#     get_url:
+#       url: "{{ item }}"
+#       dest: /var/www/html/ocp/
+#       owner: apache
+#       group: apache
+#       mode: '0644'
+#       setype: httpd_sys_content_t
+#     loop:
+#     - https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/{{ ocp_version }}/latest/rhcos-live-kernel-x86_64
+#     - https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/{{ ocp_version }}/latest/rhcos-live-initramfs.x86_64.img
+#     - https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/{{ ocp_version }}/latest/rhcos-live-rootfs.x86_64.img
+
+#   - name: Restart httpd
+#     service:
+#       name: httpd
+#       state: restarted
+#       enabled: true
+#     when: httpd.changed
+
+#   - name: Open Firewall services
+#     firewalld:
+#       port: "{{ item }}"
+#       immediate: yes
+#       permanent: yes
+#       state: enabled
+#     with_items:
+#     - 8080/tcp
+
+# - name: Prepare HAProxy host
+#   remote_user: ansible
+#   become: true
+#   hosts: ocp_haproxy
+#   vars_files:
+#   - vault.yml
+#   tasks:
+#   - name: Install packages
+#     yum:
+#       name: "{{ item }}"
+#       state: present
+#     loop:
+#     - haproxy
+
+#   - name: Copy in haproxy config
+#     copy:
+#       src: project_ocp/ocp_files/haproxy.conf
+#       dest: /etc/haproxy/haproxy.conf
+#       owner: root
+#       group: root
+#       mode: '0644'
+#     register: haproxy
+
+#   - name: Allow haproxy to bind to non standard ports
+#     seboolean:
+#       name: haproxy_connect_any
+#       state: true
+#       persistent: true
+
+#   - name: Open Firewall ports
+#     firewalld:
+#       port: "{{ item }}"
+#       immediate: yes
+#       permanent: yes
+#       state: enabled
+#     with_items:
+#     - 1934/tcp
+#     - 6443/tcp
+#     - 22623/tcp
+
+#   - name: Open Firewall services
+#     firewalld:
+#       service: "{{ item }}"
+#       immediate: yes
+#       permanent: yes
+#       state: enabled
+#     with_items:
+#     - http
+#     - https
+
+#   - name: Restart haproxy
+#     service:
+#       name: haproxy
+#       state: restarted
+#       enabled: true
+#     when: haproxy.changed
