@@ -1,6 +1,6 @@
 #!ipxe
 
-set BASEURL http://172.22.5.100:8080/ocp
+set BASEURL http://{{ ansible_default_ipv4.address }}:8080/ocp
 
 :start
 menu PXE Boot Options

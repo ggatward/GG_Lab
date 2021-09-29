@@ -4,7 +4,6 @@ ovirt_vms:
   template: CentOS-8-GenericCloud-8.3.2011
   memory: 16GiB
   cpu_cores: 4
-  #clone: true
   cloud_init:
     host_name: services.ocp.home.gatwards.org
     dns_servers: "{{ generic_dns_servers | join(' ') }}"
@@ -16,6 +15,39 @@ ovirt_vms:
   - nic_name: eth0
     nic_boot_protocol: static
     nic_ip_address: 172.22.5.100
+    nic_netmask: 255.255.255.0
+    nic_gateway: 172.22.5.1
+    nic_on_boot: true
+  cluster: "{{ ovirt_cluster_name }}"
+  data_center: "{{ ovirt_datacenter_name }}"
+  disks:
+  - size: 60GiB
+    name: CentOS-8-GenericCloud-8.3.2011
+    interface: virtio_scsi
+    name_prefix: false
+    storage_domain: VMstore1
+  nics:
+  - name: eth0
+    network: VLAN5
+  state: running
+  tag:
+    - openshift
+
+- name: haproxy
+  template: CentOS-8-GenericCloud-8.3.2011
+  memory: 4GiB
+  cpu_cores: 2
+  cloud_init:
+    host_name: proxy.ocp.home.gatwards.org
+    dns_servers: "{{ generic_dns_servers | join(' ') }}"
+    dns_search: ocp.home.gatwards.org
+    user_name: ansible
+    root_password: "{{ vault_vm_root_password }}"
+    authorized_ssh_keys: "{{ vault_ansible_ssh_public_key }}"
+  cloud_init_nics:
+  - nic_name: eth0
+    nic_boot_protocol: static
+    nic_ip_address: 172.22.5.99
     nic_netmask: 255.255.255.0
     nic_gateway: 172.22.5.1
     nic_on_boot: true
@@ -41,5 +73,110 @@ ovirt_vms:
   tag:
     - openshift
 
+- name: ocp-bootstrap
+  memory: 16GiB
+  cpu_cores: 4
+  cluster: "{{ ovirt_cluster_name }}"
+  data_center: "{{ ovirt_datacenter_name }}"
+  boot_devices:
+  - network
+  - hd
+  disks:
+  - size: 300GiB
+    name: disk1
+    interface: virtio_scsi
+    storage_domain: VMstore1
+    bootable: true
+  nics:
+  - name: eth0
+    network: VLAN5
+  state: stopped
+  tag:
+    - openshift
+
+- name: ocp-master1
+  memory: 16GiB
+  cpu_cores: 4
+  cluster: "{{ ovirt_cluster_name }}"
+  data_center: "{{ ovirt_datacenter_name }}"
+  boot_devices:
+  - network
+  - hd
+  disks:
+  - size: 300GiB
+    name: disk1
+    interface: virtio_scsi
+    storage_domain: VMstore1
+    bootable: true
+  nics:
+  - name: eth0
+    network: VLAN5
+  state: stopped
+  tag:
+    - openshift
+
+- name: ocp-master2
+  memory: 16GiB
+  cpu_cores: 4
+  cluster: "{{ ovirt_cluster_name }}"
+  data_center: "{{ ovirt_datacenter_name }}"
+  boot_devices:
+  - network
+  - hd
+  disks:
+  - size: 300GiB
+    name: disk1
+    interface: virtio_scsi
+    storage_domain: VMstore1
+    bootable: true
+  nics:
+  - name: eth0
+    network: VLAN5
+  state: stopped
+  tag:
+    - openshift
+
+- name: ocp-master3
+  memory: 16GiB
+  cpu_cores: 4
+  cluster: "{{ ovirt_cluster_name }}"
+  data_center: "{{ ovirt_datacenter_name }}"
+  boot_devices:
+  - network
+  - hd
+  disks:
+  - size: 300GiB
+    name: disk1
+    interface: virtio_scsi
+    storage_domain: VMstore1
+    bootable: true
+  nics:
+  - name: eth0
+    network: VLAN5
+  state: stopped
+  tag:
+    - openshift
+
 
 ocp_version: '4.8'
+
+ocp_basedomain: ocp.home.gatwards.org
+ocp_clustername: lab
+
+# Number of worker nodes
+ocp_workers: 0
+
+
+ocp_rhcos_hosts:
+- name: bootstrap
+  ip: 172.22.5.110
+  mac: 56:6f:db:47:00:08
+- name: master1
+  ip: 172.22.5.101
+  mac: 56:6f:db:47:00:09
+- name: master2
+  ip: 172.22.5.102
+  mac: 56:6f:db:47:00:0b
+- name: master3
+  ip: 172.22.5.103
+  mac: 56:6f:db:47:00:0c

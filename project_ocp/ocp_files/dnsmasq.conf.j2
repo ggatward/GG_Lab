@@ -9,7 +9,7 @@ group=dnsmasq
 # specified interfaces (and the loopback) give the name of the
 # interface (eg eth0) here.
 # Repeat the line for more than one interface.
-interface=eth0
+interface={{ ansible_default_ipv4.interface }}
 # Or you can specify which interface _not_ to listen on
 #except-interface=
 # Or which to listen on by address (remember to include 127.0.0.1 if
@@ -27,7 +27,7 @@ interface=eth0
 # 2) Sets the "domain" DHCP option thereby potentially setting the
 #    domain of all systems configured by DHCP
 # 3) Provides the domain part for "expand-hosts"
-domain=lab.ocp.home.gatwards.org
+domain={{ ocp_clustername }}.{{ ocp_basedomain }}
 
 # Uncomment this to enable the integrated DHCP server, you need
 # to supply the range of addresses available for lease and optionally
@@ -36,14 +36,10 @@ domain=lab.ocp.home.gatwards.org
 # service.
 dhcp-range=172.22.5.50,172.22.5.89,12h
 
-# Always allocate the host with Ethernet address 11:22:33:44:55:66
-# The IP address 192.168.0.60
-dhcp-host=56:6f:db:47:00:01,172.22.5.110
-dhcp-host=52:6f:db:47:00:02,172.22.5.101
-dhcp-host=52:6f:db:47:00:03,172.22.5.102
-dhcp-host=52:6f:db:47:00:04,172.22.5.103
-#dhcp-host=52:54:00:08:80:1c,172.22.5.104
-#dhcp-host=52:54:00:8b:0f:c7,172.22.5.105
+{% for item in ocp_rhcos_hosts %}
+dhcp-host={{ item.mac }},{{ item.ip }}
+{% endfor %}
+
 
 # Send options to hosts which ask for a DHCP lease.
 # See RFC 2132 for details of available options.
@@ -58,13 +54,13 @@ dhcp-host=52:6f:db:47:00:04,172.22.5.103
 
 # Override the default route supplied by dnsmasq, which assumes the
 # router is the same machine as the one running dnsmasq.
-dhcp-option=3,172.22.5.1
+dhcp-option=3,{{ ansible_default_ipv4.gateway }}
 
 # Set the NTP time server addresses to 192.168.0.4 and 10.10.0.5
 dhcp-option=option:ntp-server,172.22.1.2,172.22.1.3,172.22.1.5
 
 dhcp-option=option:dns-server,172.22.1.3,172.22.1.5
-dhcp-option=option:netmask,255.255.255.0
+dhcp-option=option:netmask,{{ ansible_default_ipv4.netmask }}
 
 
 # Enable dnsmasq's built-in TFTP server
@@ -91,12 +87,12 @@ dhcp-match=set:ipxe,175
 dhcp-vendorclass=BIOS,PXEClient:Arch:00000
 
 # 1st boot file - Legacy BIOS client
-dhcp-boot=tag:!ipxe,tag:BIOS,undionly.kpxe,172.22.5.100
+dhcp-boot=tag:!ipxe,tag:BIOS,undionly.kpxe,{{ ansible_default_ipv4.address }}
 
 # 1st boot file - EFI client
 # at the moment all non-BIOS clients are considered
 # EFI client
-dhcp-boot=tag:!ipxe,tag:!BIOS,ipxe.efi,172.22.5.100
+dhcp-boot=tag:!ipxe,tag:!BIOS,ipxe.efi,{{ ansible_default_ipv4.address }}
 
 # 2nd boot file
 dhcp-boot=tag:ipxe,menu/boot.ipxe

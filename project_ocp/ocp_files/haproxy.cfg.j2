@@ -41,33 +41,40 @@ frontend stats
 listen api-server-6443
     bind *:6443
     mode tcp
-    server      bootstrap 172.22.5.110:6443 check inter 1s backup
-    server      master1 172.22.5.101:6443 check inter 1s
-    server      master2 172.22.5.102:6443 check inter 1s
-    server      master3 172.22.5.103:6443 check inter 1s
+{% for item in ocp_rhcos_hosts %}
+{% if 'worker' not in item.name %}
+    server      {{ item.name }} {{ item.ip }}:6443 check inter 1s {% if 'bootstrap' in item.name %}backup{% endif %}
+
+{% endif %}
+{% endfor %}
+
 
 listen machine-config-server-22623
     bind *:22623
     mode tcp
-    server      bootstrap 172.22.5.110:22623 check inter 1s backup
-    server      master1 172.22.5.101:22623 check inter 1s
-    server      master2 172.22.5.102:22623 check inter 1s
-    server      master3 172.22.5.103:22623 check inter 1s
+{% for item in ocp_rhcos_hosts %}
+{% if 'worker' not in item.name %}
+    server      {{ item.name }} {{ item.ip }}:22623 check inter 1s {% if 'bootstrap' in item.name %}backup{% endif %}
 
+{% endif %}
+{% endfor %}
+
+
+# Ingress controllers are on the WORKERS normally - change if statement to match requirements
 listen ingress-router-80
     bind :80
     mode tcp
-    server      master1 172.22.5.101:80 check inter 1s
-    server      master2 172.22.5.102:80 check inter 1s
-    server      master3 172.22.5.103:80 check inter 1s
-#    server      worker-1 172.22.5.104:80 check inter 1s
-#    server      worker-2 172.22.5.105:80 check inter 1s
+{% for item in ocp_rhcos_hosts %}
+{% if 'master' in item.name %}
+    server      {{ item.name }} {{ item.ip }}:80 check inter 1s
+{% endif %}
+{% endfor %}
 
 listen ingress-router-443
     bind *:443
     mode tcp
-    server      master1 172.22.5.101:443 check inter 1s
-    server      master2 172.22.5.102:443 check inter 1s
-    server      master3 172.22.5.103:443 check inter 1s
-#    server      worker-1 172.22.5.104:443 check inter 1s
-#    server      worker-2 172.22.5.105:443 check inter 1s
+{% for item in ocp_rhcos_hosts %}
+{% if 'master' in item.name %}
+    server      {{ item.name }} {{ item.ip }}:443 check inter 1s
+{% endif %}
+{% endfor %}

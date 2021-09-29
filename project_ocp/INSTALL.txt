@@ -1,102 +1,30 @@
-(Ref https://itnext.io/guide-installing-an-okd-4-5-cluster-508a2631cbee)
-
-### HYPERVISOR
-
-Kickstart with CentOS 8.3
-
-yum -y update
-
-# Install virtualisation
-yum -y groupinstall 'Virtualisation Host'
-yum -y install virt-manager xauth wget tar
-systemctl enable libvirtd && systemctl start libvirtd
 
 
-# Create LV for libvirt guest images and mount it
-fdisk /dev/sdb
-pvcreate /dev/sdb1
-vgcreate -n data /dev/sdb1
-lvcreate -n libvirt -L +500G /dev/data
-mkfs.xfs /dev/data/libvirt
-echo "/dev/data/libvirt /var/lib/libvirt/images       xfs   noatime,nosuid,nodev,noexec 0 0" >> /etc/fstab
-mount -a
-restorecon -Rv /var/lib/libvirt/images
+# Provision oVirt VMs
+ansible-playbook -i hosts.ini ocp_provision_ovirt.yml --ask-vault-pass
 
-# Create LV for various ISOs and installers
-mkdir /data
-echo "/dev/data/isos /data       xfs   noatime,nosuid,nodev,noexec 0 0" >> /etc/fstab
+# Update group_vars/ocp.yml with MAC addresses for the OCP bootstrap/master/worker nodes
+
+# Generic host setup
+ansible-playbook -i hosts.ini --ask-vault-pass -bkK generic.yml --limit ocp
+ansible-playbook -i hosts.ini --ask-vault-pass -bkK hardening.yml --limit ocp
+ansible -i hosts.ini -bkK -m shell -a 'yum -y update && reboot' ocp
 
 
-# Configure libvirt networking:
-# Copy contents of network_config over to hypervisor /etc/sysconfig/network-scripts/*
-systemctl restart NetworkManager
+# Configure OCP services and HAProxy hosts
+ansible-playbook -i hosts.ini --ask-vault-pass -bkK ocp_prep_hosts.yml
 
+# To force the OCP cluster configuration to run (manifests/ign) pass in extra_var:
+ansible-playbook -i hosts.ini --ask-vault-pass -bkK ocp_prep_hosts.yml -e ocp_cluster_config=true
 
 
 #############################################################
-# Create CentOS8 'services' VM
- - KVM Networking:
-    - LAB interface (eth0) bridge to VLAN4
-    - OCP interface (eth1) bridge to VLAN3
- - Hostname okd4-services.okd.local
- - LAB IP  172.22.4.100
- - OCP IP  172.22.3.100
-
-dnf -y update
-dnf -y install epel-release git
-
-# Clone okd_files dir from repo
-cd okd4_files
-
-# Setup and start DHCP and TFTP
-dnf -y install dnsmasq ipxe-bootimgs
-cp okd4_files/dnsmasq.conf /etc/dnsmasq.conf
-cp okd4_files/dnsmasq.service /usr/lib/systemd/system/dnsmasq.service
-mkdir -p /var/lib/tftpboot/menu
-cp /usr/share/ipxe/{undionly.kpxe,ipxe-x86_64.efi} /var/lib/tftpboot
-cp pxe_files/boot.ipxe /var/lib/tftpboot/menu/
-chmod 644 /var/lib/tftpboot/menu/boot.ipxe
-restorecon -Rv /var/lib/tftpboot
-systemctl daemon-reload
-systemctl enable dnsmasq
-systemctl start dnsmasq
-firewall-cmd --permanent --add-service dhcp --add-service tftp
-firewall-cmd --reload
-
-
-# Setup and start HAProxy
-dnf -y install haproxy
-cp okd4_files/haproxy.cfg /etc/haproxy/haproxy.cfg
-setsebool -P haproxy_connect_any 1
-systemctl enable haproxy
-systemctl start haproxy
-firewall-cmd --permanent --add-port=6443/tcp
-firewall-cmd --permanent --add-port=22623/tcp
-firewall-cmd --permanent --add-service=http
-firewall-cmd --permanent --add-service=https
-firewall-cmd --reload
-
-# Setup and start Webserver on port 8080
-dnf -y install httpd
-sed -i 's/Listen 80/Listen 8080/' /etc/httpd/conf/httpd.conf
-setsebool -P httpd_read_user_content 1
-systemctl enable httpd
-systemctl start httpd
-firewall-cmd --permanent --add-port=8080/tcp
-firewall-cmd --reload
-
-
-#############################################################
-# Create CoreOS VMs  (Networking and hostnames are configured via DHCP)
- - KVM Networking:
-    - OKD interface (eth0) on VLAN5
-
- - bootstrap.lab.okd.local     (172.22.5.110)
- - master-1       (172.22.5.101)
- - master-2       (172.22.5.102)
- - master-3       (172.22.5.103)
- - worker-1       (172.22.5.104)
- - worker-2       (172.22.5.105)
-
-
-Update /etc/dnsmasq.conf with MAC addresses from the created VMs above
+# Start Bootstrap Node
+# - Power on bootstrap VM, perform iPXE network install of bootstrap server
+# - Power on master VMs, perform iPXE network install of master servers
+# - Power on worker VMs, perform iPXE network install of worker servers
+#
+# Bootstrapping can take upwards of 30 minutes to complete.
+#
+# The bootstrap process can be monitored from the services node with the following
+openshift-install --dir=install_dir/ wait-for bootstrap-complete --log-level=info
