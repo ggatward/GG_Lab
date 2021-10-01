@@ -267,7 +267,7 @@
       group: apache
       mode: '0644'
       setype: httpd_sys_content_t
-    #when: not item.stat.exists
+    when: not item.stat.exists
     loop: "{{ ocp_file_var.results }}"
 
   - name: Restart httpd
@@ -367,28 +367,52 @@
       shell:
         cmd: /usr/local/sbin/openshift-install create manifests --dir=/home/openshift/cluster_setup/
 
-    # CUSTOMISE MANIFESTS IN HERE
-    # - name: Configure /var mountpoint
-    #   tags:
-    #   - services
-    #   - openshift
-    #   copy:
-    #     src: project_ocp/ocp_files/custom/98-var-partition.yaml
-    #     dest: /home/openshift/cluster_setup/openshift/
-    #     mode: '0644'
+    ### CUSTOMISE MANIFESTS IN HERE
 
-    # Customise the manifests for chrony etc....
+    # Deploy Butane format configurations
+    - name: Deploy butane files
+      tags:
+      - services
+      - openshift
+      template:
+        src: project_ocp/ocp_files/custom/butane/{{ item }}.bu.j2
+        dest: /root/
+      loop:
+      - 99-master-chrony
+      - 99-worker-chrony
+
+    - name: Create MCO object from Butane
+      tags:
+      - services
+      - openshift
+      command:
+        cmd: /usr/local/sbin/butane {{ item }}.bu -o /home/openshift/cluster_setup/openshift/{{ item }}.yaml
+      loop:
+      - 99-master-chrony
+      - 99-worker-chrony
 
 
-    # - name: Prevent pods scheduling on control plane
-    #   tags:
-    #   - services
-    #   - openshift
-    #   lineinfile:
-    #     path: /home/openshift/cluster_setup/manifests/cluster-scheduler-02-config.yml
-    #     regexp: '^  mastersSchedulable'
-    #     line: '  mastersSchedulable: False'
-    #   when: ocp_workers != 0
+    # Deploy MachineConfig files into manifest dir
+    - name: Configure seperate /var mountpoint
+      tags:
+      - services
+      - openshift
+      copy:
+        src: project_ocp/ocp_files/custom/98-var-partition.yaml
+        dest: /home/openshift/cluster_setup/openshift/
+        mode: '0644'
+
+    - name: Prevent pods scheduling on control plane
+      tags:
+      - services
+      - openshift
+      lineinfile:
+        path: /home/openshift/cluster_setup/manifests/cluster-scheduler-02-config.yml
+        regexp: '^  mastersSchedulable'
+        line: '  mastersSchedulable: False'
+      when: ocp_workers != 0
+
+    ### END OF CUSTOMISATIONS
 
     - name: Create Ignition Files
       tags:

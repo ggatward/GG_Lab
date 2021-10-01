@@ -1,0 +1,30 @@
+---
+# List of post install (day-2) tasks that need to be performed - probably via MCO files through the API
+
+# Custom SSL Certs
+
+# Dedicated Infrastructure Machine Set
+
+# IPA Integration
+
+# Disable Tememetry
+
+# Configure Logging
+
+# Configure Monitoring
+
+# Configure Storage
+
+# Configure etcd backups
+
+# Configure Image Streams for disconnected cluster
+
+# Ingress controller configuration
+
+# Network Policy
+
+# Service Mesh
+
+# Traffic Mirroring
+
+# Customer Registry (OCP internal registry?)
