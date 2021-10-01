@@ -111,12 +111,22 @@
       owner: root
       group: root
       mode: '0755'
-      creates: "{{ item.creates }}"
+      #creates: "{{ item.creates }}"
     loop:
-    - src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-install-linux.tar.gz
+    - src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-{{ ocp_version }}/openshift-install-linux.tar.gz
       creates: /usr/local/sbin/openshift-install
-    - src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
+    - src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-{{ ocp_version }}/openshift-client-linux.tar.gz
       creates: /usr/local/sbin/oc
+
+  - name: Download Butane
+    tags:
+    - services
+    get_url:
+      url: https://mirror.openshift.com/pub/openshift-v4/clients/butane/latest/butane
+      dest: /usr/local/sbin/butane
+      owner: root
+      group: root
+      mode: '0755'
 
   # DNSMasq (DHCP/TFTP)
   - name: Copy in dnsmasq files
@@ -257,7 +267,7 @@
       group: apache
       mode: '0644'
       setype: httpd_sys_content_t
-    when: not item.stat.exists
+    #when: not item.stat.exists
     loop: "{{ ocp_file_var.results }}"
 
   - name: Restart httpd
@@ -358,18 +368,27 @@
         cmd: /usr/local/sbin/openshift-install create manifests --dir=/home/openshift/cluster_setup/
 
     # CUSTOMISE MANIFESTS IN HERE
+    # - name: Configure /var mountpoint
+    #   tags:
+    #   - services
+    #   - openshift
+    #   copy:
+    #     src: project_ocp/ocp_files/custom/98-var-partition.yaml
+    #     dest: /home/openshift/cluster_setup/openshift/
+    #     mode: '0644'
+
     # Customise the manifests for chrony etc....
 
-    - name: Prevent pods scheduling on control plane
-      tags:
-      - services
-      - openshift
-      lineinfile:
-        path: /home/openshift/cluster_setup/manifests/cluster-scheduler-02-config.yml
-        regexp: '^  mastersSchedulable'
-        line: '  mastersSchedulable: False'
-      when: ocp_workers != 0
 
+    # - name: Prevent pods scheduling on control plane
+    #   tags:
+    #   - services
+    #   - openshift
+    #   lineinfile:
+    #     path: /home/openshift/cluster_setup/manifests/cluster-scheduler-02-config.yml
+    #     regexp: '^  mastersSchedulable'
+    #     line: '  mastersSchedulable: False'
+    #   when: ocp_workers != 0
 
     - name: Create Ignition Files
       tags:

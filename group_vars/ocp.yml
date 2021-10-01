@@ -166,6 +166,8 @@ ocp_clustername: lab
 # Number of worker nodes
 ocp_workers: 0
 
+ocp_network_type: OpenShiftSDN
+#ocp_network_type: OVNKubernetes
 
 ocp_rhcos_hosts:
 - name: bootstrap

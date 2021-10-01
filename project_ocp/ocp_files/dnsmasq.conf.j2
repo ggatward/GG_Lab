@@ -37,7 +37,7 @@ domain={{ ocp_clustername }}.{{ ocp_basedomain }}
 dhcp-range=172.22.5.50,172.22.5.89,12h
 
 {% for item in ocp_rhcos_hosts %}
-dhcp-host={{ item.mac }},{{ item.ip }}
+dhcp-host={{ item.mac }},{{ item.ip }},{{ item.name }}
 {% endfor %}
 
 

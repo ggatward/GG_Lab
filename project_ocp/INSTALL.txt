@@ -27,4 +27,19 @@ ansible-playbook -i hosts.ini --ask-vault-pass -bkK ocp_prep_hosts.yml -e ocp_cl
 # Bootstrapping can take upwards of 30 minutes to complete.
 #
 # The bootstrap process can be monitored from the services node with the following
-openshift-install --dir=install_dir/ wait-for bootstrap-complete --log-level=info
+openshift-install --dir=/home/openshift/cluster_setup/ wait-for bootstrap-complete --log-level=info
+
+# Once the bootstrap server is removed (when prompted to do so) the rest of the install can be monitored
+openshift-install --dir=/home/openshift/cluster_setup/ wait-for install-complete
+
+
+
+
+# Accessing the nodes:
+ssh -i /home/openshift/.ssh/id_rsa core@master1.<cluster>.<basedomain>
+
+# Tailing logs:
+journalctl -b -f -u release-image.service -u bootkube.service
+
+# Accessing console:
+https://console-openshift-console.apps.<cluster>.<basedomain>
