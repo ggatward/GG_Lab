@@ -80,7 +80,7 @@
     loop:
     - 'pip==19.3.1'             # Latest pip BREAKS !!!
     - 'ansible<2.9'             # kolla requires 2.7 or 2.8 - 2.9+ will NOT work
-    - 'kolla-ansible==7.1.0'    # 7.0.1 will install but no longer work due to docker RPM repo changes
+    - 'kolla-ansible==7.2.1'
     - selinux
     - openstackclient
 
@@ -106,7 +106,7 @@
       group: root
       mode: '0644'
 
-  # We need docker installed and running to configure swift rings BEFORE kolla is bootstrappe
+  # We need docker installed and running to configure swift rings BEFORE kolla is bootstrapped
   - name: Install docker
     yum:
       name: docker-ce

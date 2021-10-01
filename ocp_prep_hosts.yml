@@ -1,0 +1,417 @@
+---
+- name: Deploy SSH keys from deploy host
+  remote_user: ansible
+  become: true
+  hosts: ocp_services,ocp_haproxy
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Copy SSH public key
+    copy:
+      content: "{{ vault_ansible_ssh_public_key }}"
+      dest: /root/.ssh/authorized_keys
+      owner: root
+      group: root
+      mode: '0644'
+
+
+- name: Prepare HAProxy host
+  remote_user: ansible
+  become: true
+  hosts: ocp_haproxy
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Install packages
+    tags:
+    - haproxy
+    yum:
+      name: "{{ item }}"
+      state: present
+    loop:
+    - haproxy
+
+  - name: Copy in haproxy config
+    tags:
+    - haproxy
+    template:
+      src: project_ocp/ocp_files/haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+      owner: root
+      group: root
+      mode: '0644'
+    register: haproxy
+
+  - name: Allow haproxy to bind to non standard ports
+    tags:
+    - haproxy
+    seboolean:
+      name: haproxy_connect_any
+      state: true
+      persistent: true
+
+  - name: Open Firewall ports
+    tags:
+    - haproxy
+    firewalld:
+      port: "{{ item }}"
+      immediate: yes
+      permanent: yes
+      state: enabled
+    with_items:
+    - 1934/tcp
+    - 6443/tcp
+    - 22623/tcp
+
+  - name: Open Firewall services
+    tags:
+    - haproxy
+    firewalld:
+      service: "{{ item }}"
+      immediate: yes
+      permanent: yes
+      state: enabled
+    with_items:
+    - http
+    - https
+
+  - name: Restart haproxy
+    tags:
+    - haproxy
+    service:
+      name: haproxy
+      state: restarted
+      enabled: true
+    when: haproxy.changed
+
+
+- name: Prepare OCP services (helper) host
+  remote_user: ansible
+  become: true
+  hosts: ocp_services
+  vars_files:
+  - vault.yml
+  tasks:
+  - name: Install packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    loop:
+    - dnsmasq
+    - ipxe-bootimgs
+    - httpd
+
+  - name: Download OCP tools
+    tags:
+    - services
+    unarchive:
+      src: "{{ item.src }}"
+      remote_src: true
+      dest: /usr/local/sbin/
+      owner: root
+      group: root
+      mode: '0755'
+      #creates: "{{ item.creates }}"
+    loop:
+    - src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-{{ ocp_version }}/openshift-install-linux.tar.gz
+      creates: /usr/local/sbin/openshift-install
+    - src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-{{ ocp_version }}/openshift-client-linux.tar.gz
+      creates: /usr/local/sbin/oc
+
+  - name: Download Butane
+    tags:
+    - services
+    get_url:
+      url: https://mirror.openshift.com/pub/openshift-v4/clients/butane/latest/butane
+      dest: /usr/local/sbin/butane
+      owner: root
+      group: root
+      mode: '0755'
+
+  # DNSMasq (DHCP/TFTP)
+  - name: Copy in dnsmasq files
+    tags:
+    - services
+    - dnsmasq
+    template:
+      src: "{{ item.src }}.j2"
+      dest: "{{ item.dest }}"
+      owner: root
+      group: root
+      mode: '0644'
+    loop:
+    - src: project_ocp/ocp_files/dnsmasq.conf
+      dest: /etc/dnsmasq.conf
+    - src: project_ocp/ocp_files/dnsmasq.service
+      dest: /usr/lib/systemd/system/dnsmasq.service
+    register: dnsmasq
+
+  - name: Create TFTP directories
+    tags:
+    - services
+    - dnsmasq
+    file:
+      path: /var/lib/tftpboot/menu
+      state: directory
+      owner: root
+      group: root
+      mode: '0755'
+      setype: tftpdir_rw_t
+
+  - name: Copy iPXE bootloaders
+    tags:
+    - services
+    - dnsmasq
+    copy:
+      src: "{{ item }}"
+      remote_src: true
+      dest: /var/lib/tftpboot/
+      owner: root
+      group: root
+      mode: '0644'
+      setype: tftpdir_rw_t
+    loop:
+    - /usr/share/ipxe/undionly.kpxe
+    - /usr/share/ipxe/ipxe-x86_64.efi
+
+  - name: Copy iPXE boot menu
+    tags:
+    - services
+    - dnsmasq
+    template:
+      src: project_ocp/ocp_files/boot.ipxe.j2
+      dest: /var/lib/tftpboot/menu/boot.ipxe
+      owner: root
+      group: root
+      mode: '0644'
+      setype: tftpdir_rw_t
+
+  - name: Open Firewall services
+    tags:
+    - services
+    - dnsmasq
+    firewalld:
+      service: "{{ item }}"
+      immediate: yes
+      permanent: yes
+      state: enabled
+    with_items:
+    - dhcp
+    - tftp
+
+  - name: Restart dnsmasq
+    tags:
+    - services
+    - dnsmasq
+    service:
+      name: dnsmasq
+      state: restarted
+      enabled: true
+      daemon_reload: true
+    when: dnsmasq.changed
+
+  # HTTPD
+  - name: Set apache listen port
+    tags:
+    - services
+    - httpd
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^Listen 80'
+      line: Listen 8080
+    register: httpd
+
+  - name: Allow apache to read our content
+    tags:
+    - services
+    - httpd
+    seboolean:
+      name: httpd_read_user_content
+      state: true
+      persistent: true
+
+  - name: Create OCP content directory
+    tags:
+    - services
+    - httpd
+    file:
+      path: /var/www/html/ocp
+      state: directory
+      owner: apache
+      group: apache
+      mode: '0755'
+      setype: httpd_sys_content_t
+
+  - name: Check downloaded images
+    tags:
+    - services
+    - httpd
+    stat:
+      path: "/var/www/html/ocp/{{ ocp_file }}"
+    loop:
+    - rhcos-live-kernel-x86_64
+    - rhcos-live-initramfs.x86_64.img
+    - rhcos-live-rootfs.x86_64.img
+    loop_control:
+      loop_var: ocp_file
+    register: ocp_file_var
+
+  - name: Download CoreOS images
+    tags:
+    - services
+    - httpd
+    get_url:
+      url: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/{{ ocp_version }}/latest/{{ item.ocp_file }}"
+      dest: "/var/www/html/ocp/{{ item.ocp_file }}"
+      owner: apache
+      group: apache
+      mode: '0644'
+      setype: httpd_sys_content_t
+    #when: not item.stat.exists
+    loop: "{{ ocp_file_var.results }}"
+
+  - name: Restart httpd
+    tags:
+    - services
+    - httpd
+    service:
+      name: httpd
+      state: restarted
+      enabled: true
+    when: httpd.changed
+
+  - name: Open Firewall services
+    tags:
+    - services
+    - httpd
+    firewalld:
+      port: "{{ item }}"
+      immediate: yes
+      permanent: yes
+      state: enabled
+    with_items:
+    - 8080/tcp
+
+  # OpenShift installer
+  - name: Create openshift user
+    tags:
+    - services
+    - openshift
+    user:
+      name: openshift
+      state: present
+
+  - name: Create openshift directories
+    tags:
+    - services
+    - openshift
+    file:
+      path: "{{ item.path }}"
+      state: directory
+      owner: openshift
+      group: openshift
+      mode: "{{ item.mode }}"
+    loop:
+    - path: /home/openshift/.ssh
+      mode: '0700'
+
+  - name: Deploy openshift SSH key
+    tags:
+    - services
+    - openshift
+    copy:
+      content: "{{ vault_ocp_ssh_key }}"
+      dest: /home/openshift/.ssh/id_rsa
+      owner: openshift
+      group: openshift
+      mode: '0600'
+
+  - block:
+    - name: Clean existing deployment
+      tags:
+      - services
+      - openshift
+      file:
+        path: /home/openshift/cluster_setup
+        state: absent
+
+    - name: Create openshift directories
+      tags:
+      - services
+      - openshift
+      file:
+        path: /home/openshift/cluster_setup
+        state: directory
+        owner: openshift
+        group: openshift
+        mode: '0750'
+
+    - name: Deploy Openshift Config
+      tags:
+      - services
+      - openshift
+      template:
+        src: project_ocp/ocp_files/install-config.yaml.j2
+        dest: /home/openshift/{{ item }}
+        owner: openshift
+        group: openshift
+        mode: '0600'
+      loop:
+      - cluster_setup/install-config.yaml
+      - install-config.yaml.bak
+
+    - name: Create Openshift Manifests
+      tags:
+      - services
+      - openshift
+      shell:
+        cmd: /usr/local/sbin/openshift-install create manifests --dir=/home/openshift/cluster_setup/
+
+    # CUSTOMISE MANIFESTS IN HERE
+    # - name: Configure /var mountpoint
+    #   tags:
+    #   - services
+    #   - openshift
+    #   copy:
+    #     src: project_ocp/ocp_files/custom/98-var-partition.yaml
+    #     dest: /home/openshift/cluster_setup/openshift/
+    #     mode: '0644'
+
+    # Customise the manifests for chrony etc....
+
+
+    # - name: Prevent pods scheduling on control plane
+    #   tags:
+    #   - services
+    #   - openshift
+    #   lineinfile:
+    #     path: /home/openshift/cluster_setup/manifests/cluster-scheduler-02-config.yml
+    #     regexp: '^  mastersSchedulable'
+    #     line: '  mastersSchedulable: False'
+    #   when: ocp_workers != 0
+
+    - name: Create Ignition Files
+      tags:
+      - services
+      - openshift
+      shell:
+        cmd: /usr/local/sbin/openshift-install create ignition-configs --dir=/home/openshift/cluster_setup/
+
+    - name: Move Ignition files to web hosting
+      tags:
+      - services
+      - openshift
+      copy:
+        src: /home/openshift/cluster_setup/{{ item }}
+        remote_src: true
+        dest: /var/www/html/ocp/
+        owner: apache
+        group: apache
+        mode: '0644'
+        setype: httpd_sys_content_t
+      loop:
+      - bootstrap.ign
+      - master.ign
+      - worker.ign
+      - metadata.json
+    when: ocp_configure_cluster is defined and ocp_configure_cluster

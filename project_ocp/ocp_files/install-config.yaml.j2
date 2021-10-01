@@ -1,0 +1,29 @@
+apiVersion: v1
+baseDomain: {{ ocp_basedomain}}
+metadata:
+  name: {{ ocp_clustername }}
+
+compute:
+- name: worker
+  platform: {}
+  replicas: {{ ocp_workers }}
+
+controlPlane:
+  name: master
+  replicas: 3
+
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  networkType: {{ ocp_network_type }}
+  serviceNetwork:
+  - 10.100.0.0/16
+
+platform:
+  none: {}
+
+fips: false
+
+pullSecret: '{{ vault_ocp_pull_secret }}'
+sshKey: '{{ vault_ocp_ssh_pubkey }}'

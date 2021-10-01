@@ -1,0 +1,45 @@
+
+
+# Provision oVirt VMs
+ansible-playbook -i hosts.ini ocp_provision_ovirt.yml --ask-vault-pass
+
+# Update group_vars/ocp.yml with MAC addresses for the OCP bootstrap/master/worker nodes
+
+# Generic host setup
+ansible-playbook -i hosts.ini --ask-vault-pass -bkK generic.yml --limit ocp
+ansible-playbook -i hosts.ini --ask-vault-pass -bkK hardening.yml --limit ocp
+ansible -i hosts.ini -bkK -m shell -a 'yum -y update && reboot' ocp
+
+
+# Configure OCP services and HAProxy hosts
+ansible-playbook -i hosts.ini --ask-vault-pass -bkK ocp_prep_hosts.yml
+
+# To force the OCP cluster configuration to run (manifests/ign) pass in extra_var:
+ansible-playbook -i hosts.ini --ask-vault-pass -bkK ocp_prep_hosts.yml -e ocp_cluster_config=true
+
+
+#############################################################
+# Start Bootstrap Node
+# - Power on bootstrap VM, perform iPXE network install of bootstrap server
+# - Power on master VMs, perform iPXE network install of master servers
+# - Power on worker VMs, perform iPXE network install of worker servers
+#
+# Bootstrapping can take upwards of 30 minutes to complete.
+#
+# The bootstrap process can be monitored from the services node with the following
+openshift-install --dir=/home/openshift/cluster_setup/ wait-for bootstrap-complete --log-level=info
+
+# Once the bootstrap server is removed (when prompted to do so) the rest of the install can be monitored
+openshift-install --dir=/home/openshift/cluster_setup/ wait-for install-complete
+
+
+
+
+# Accessing the nodes:
+ssh -i /home/openshift/.ssh/id_rsa core@master1.<cluster>.<basedomain>
+
+# Tailing logs:
+journalctl -b -f -u release-image.service -u bootkube.service
+
+# Accessing console:
+https://console-openshift-console.apps.<cluster>.<basedomain>

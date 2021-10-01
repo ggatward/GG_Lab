@@ -430,6 +430,79 @@
       template_nics: []
     loop: "{{ ovirt_templates }}"
 
+
+# Add IPA group to oVirt
+  - name: Add oVirt user group
+    tags:
+    - ovirt_perms
+    ovirt.ovirt.ovirt_group:
+      name: ovirt_group
+      authz_name: "{{ ovirt_ldap_profile_name }}-authz"
+
+  - name: Assign permissions on Data Centre
+    tags:
+    - ovirt_perms
+    ovirt.ovirt.ovirt_permission:
+      group_name: ovirt_testgroup
+      authz_name: "{{ ovirt_ldap_profile_name }}-authz"
+      object_type: data_center
+      object_name: "{{ ovirt_datacenter_name }}"
+      role: PowerUser
+
+  - name: Assign permissions on Templates
+    tags:
+    - ovirt_perms
+    ovirt.ovirt.ovirt_permission:
+      group_name: ovirt_testgroup
+      authz_name: "{{ ovirt_ldap_profile_name }}-authz"
+      object_type: template
+      object_name: "{{ item.template_name }}"
+      role: TemplateOwner
+    loop: "{{ ovirt_templates }}"
+
+  # To restrict access to vNIC, need to:
+  # - REMOVE default 'Everyone' permission
+  # - ADD 'VnicProfileUser' for specific users/groups
+  - name: Remove public permissions on vNIC Profiles
+    tags:
+    - ovirt_perms
+    ovirt.ovirt.ovirt_permission:
+      user_name: Everyone
+      authz_name: ""
+      object_type: vnic_profile
+      object_name: "{{ item }}"
+      role: UserProfileEditor
+      state: absent
+    loop: "{{ ovirt_restricted_vnics }}
+
+  - name: Assign permissions on vNIC Profiles
+    tags:
+    - ovirt_perms
+    ovirt.ovirt.ovirt_permission:
+      group_name: ovirt_testgroup
+      authz_name: "{{ ovirt_ldap_profile_name }}-authz"
+      object_type: vnic_profile
+      object_name: "{{ item }}"
+      role: VnicProfileUser
+    loop: "{{ ovirt_restricted_vnics }}
+
+  - name: Add quota
+    tags:
+    - ovirt_quota
+    ovirt.ovirt.ovirt_quota:
+      name: TestQuota
+      data_center: "{{ ovirt_datacenter_name }}"
+      clusters:
+      - name: "{{ ovirt_cluster_name }}"
+        memory: 20  # GiB
+        cpu: 12     # vCPU
+      storages:
+      - storage: "{{ item.name }}"
+        size: 20    # GiB
+    loop: "{{ ovirt_datastores }}"
+
+
+
   - name: Always revoke the SSO token
     tags:
     - always

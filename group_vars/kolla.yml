@@ -4,7 +4,6 @@ ovirt_vms:
   template: CentOS-7-x86_64-GenericCloud-2009
   memory: 12GiB
   cpu_cores: 4
-  #clone: true
   cloud_init:
     host_name: control-1.osp.home.gatwards.org
     dns_servers: "{{ generic_dns_servers | join(' ') }}"
@@ -37,7 +36,7 @@ ovirt_vms:
   cluster: "{{ ovirt_cluster_name }}"
   data_center: "{{ ovirt_datacenter_name }}"
   disks:
-  - size: 120GiB
+  - size: 80GiB
     name: CentOS-7-x86_64-GenericCloud-2009
     interface: virtio_scsi
     name_prefix: false
@@ -67,9 +66,10 @@ ovirt_vms:
   tag:
     - kolla
     - openstack
+
 - name: compute-1
   template: CentOS-7-x86_64-GenericCloud-2009
-  memory: 8GiB
+  memory: 16GiB
   cpu_cores: 4
   #clone: true
   cloud_init:
@@ -153,7 +153,7 @@ ovirt_vms:
   cluster: "{{ ovirt_cluster_name }}"
   data_center: "{{ ovirt_datacenter_name }}"
   disks:
-  - size: 120GiB
+  - size: 80GiB
     name: CentOS-7-x86_64-GenericCloud-2009
     interface: virtio_scsi
     name_prefix: false
@@ -183,9 +183,10 @@ ovirt_vms:
   tag:
     - kolla
     - openstack
+
 - name: compute-2
   template: CentOS-7-x86_64-GenericCloud-2009
-  memory: 8GiB
+  memory: 16GiB
   cpu_cores: 4
   #clone: true
   cloud_init:

@@ -1,0 +1,14 @@
+---
+- name: Deploy oVirt VMs for OCP
+  remote_user: ansible
+  become: true
+  hosts: ovirt_engine
+  collections:
+  - ovirt.ovirt
+  vars_files:
+  - vault.yml
+  tasks:
+  - name:
+    include_tasks: tasks/create_ovirt_vms.yml
+    vars:
+      ovirt_vms: "{{ hostvars[groups['ocp'][0]].ovirt_vms }}"
